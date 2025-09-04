@@ -1,5 +1,5 @@
 import sys
-sys.path.append('ugv_rpi')  # Adjust the path as needed
+sys.path.append('../ugv_rpi')  # Adjust the path as needed
 
 # Input the library for base control
 from base_ctrl import BaseController
