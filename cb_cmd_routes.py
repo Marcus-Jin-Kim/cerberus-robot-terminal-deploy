@@ -5,7 +5,7 @@ import time
 def create_routes_blueprint(robot_control_server:CerberusRobotTerminalServer):
 
     bp = Blueprint("cmd_routes", __name__)
-    _bc = robot_control_server.ai_turret.body_control
+    _bc = robot_control_server.robot_control.body_control
 
     @bp.route("/stream")
     def stream():

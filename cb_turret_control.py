@@ -215,7 +215,8 @@ class CBTurretControl: # this should be top level robot controller later
                     new_tilt = self.turret_ver_min
 
                 # print(f"Turret move to pan: {new_pan}, {self.turret_last_pan} tilt: {new_tilt}, {self.turret_last_tilt}")
-                self.turret_base_control.base_control_low.gimbal_ctrl(new_pan, new_tilt, self.turret_speed, self.turret_acc)
+                # FIXME: TOO LOW
+                self.turret_low_level_control.base_control_low.gimbal_ctrl(new_pan, new_tilt, self.turret_speed, self.turret_acc)
                 self.turret_last_pan = new_pan
                 self.turret_last_tilt = new_tilt
                 self.turret_is_aiming = True

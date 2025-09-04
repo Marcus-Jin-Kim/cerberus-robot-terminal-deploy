@@ -26,7 +26,7 @@ class CerberusRobotTerminalServer:
 
         # Shared backend (single instance)
         self.low_level_control = CBLowLevelControl()        
-        self.ai_turret = CBRobotControl(
+        self.robot_control = CBRobotControl(
             cb_low_level_control=self.low_level_control,
             return_image=return_image, control_turret=control_turret, auto_aim=auto_aim
         )
@@ -64,7 +64,7 @@ class CerberusRobotTerminalServer:
             t0 = time.time()
             wait_for_second = 1.0 / max(1, _TEMP_FPS_CAP_)
             try:
-                res = self.ai_turret.detect_pose()
+                res = self.robot_control.scan_enemy()
             except Exception as e:
                 tb = traceback.extract_tb(e.__traceback__)[-1]
                 print(f"[AI ] detect_pose error at {tb.filename}:{tb.lineno} in {tb.name}: {e}")
