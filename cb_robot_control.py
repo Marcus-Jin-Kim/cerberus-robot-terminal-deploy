@@ -1,14 +1,15 @@
 import time
 import cv2
 # from flask import Flask, Response, render_template_string, jsonify
-import mediapipe as mp
-import threading
+# import mediapipe as mp
+# import threading
 
 from cb_low_level_control import CBLowLevelControl
 from cb_body_control import CBBodyControl
 from cb_turret_control import CBTurretControl
 
 from pathlib import Path
+import yaml
 import traceback
 
 
@@ -16,6 +17,8 @@ class CBRobotControl: # this should be top level robot controller later
 
     def __init__(self, cb_low_level_control:CBLowLevelControl, 
                  return_image=False, control_turret=False, auto_aim=False):
+        
+        self.config = self._read_config()
 
         if cb_low_level_control is None:
             # raise value error and print the current file name
@@ -31,6 +34,16 @@ class CBRobotControl: # this should be top level robot controller later
     def scan_enemy(self, auto_aim=False):
         return self.turret.detect_pose()
 
+    def _read_config(self):
+        try:
+            with open("cb_config.yaml", 'r') as f:
+                config = yaml.safe_load(f)
+                print(f"[CB] Loaded config: {config}")
+                return config
+        except Exception as e:
+            print(f"[CB] Error loading config: {e}")
+            return {}
+        pass
 
 # if __name__ == "__main__":
 #     aiTurret = CBRobotControl()
