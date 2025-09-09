@@ -1,4 +1,5 @@
 # cb ai turret udp + flask mjpeg server
+import yaml
 from cb_low_level_control import CBLowLevelControl
 from cb_robot_control import CBRobotControl
 import socket, time, json, threading
@@ -10,16 +11,22 @@ from flask import Flask, Response, jsonify
 
 import traceback
 
-_TEMP_FPS_CAP_ = 30 
-
 
 class CerberusRobotTerminalServer:
-    def __init__(self, host='0.0.0.0', udp_port=5001, http_port=5100,
-                 return_image=True, control_turret=False, auto_aim=False):
-        self.host = host
-        self.udp_port = udp_port
-        self.http_port = http_port
 
+    def __init__(self, config_file="cb_config.yaml",                 
+        # , host='0.0.0.0', udp_port=5001, http_port=5100,
+        #    return_image_override=None, control_turret_override=None, auto_aim_override=None
+         ):
+
+        self.config = self._load_config(config_file)
+
+        self.host = self.config.get("ROBOT_TERMINAL_SERVER_HOST", "0.0.0.0")
+        self.udp_port = self.config.get("ROBOT_TERMINAL_SERVER_UDP_PORT", 5001)
+        self.http_port = self.config.get("ROBOT_TERMINAL_SERVER_HTTP_PORT", 5100)
+        self.control_hz = self.config.get("ROBOT_TERMINAL_SERVER_ROBOT_CONTROL_HZ", 60)
+        self.stream_fps = self.config.get("ROBOT_TERMINAL_SERVER_STREAM_FPS", 15)
+        
         # UDP socket
         self.udp_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp_server.bind((self.host, self.udp_port))
@@ -27,8 +34,8 @@ class CerberusRobotTerminalServer:
         # Shared backend (single instance)
         self.low_level_control = CBLowLevelControl()        
         self.robot_control = CBRobotControl(
-            cb_low_level_control=self.low_level_control,
-            return_image=return_image, control_turret=control_turret, auto_aim=auto_aim
+            config=self.config,
+            cb_low_level_control=self.low_level_control            
         )
 
         # Shared state
@@ -46,8 +53,8 @@ class CerberusRobotTerminalServer:
         print(f"[SERV] UDP on {self.host}:{self.udp_port}, HTTP MJPEG on {self.host}:{self.http_port}")
 
 
-    def mjpeg_gen(self, fps=15):
-        period = 1.0 / max(1, fps)
+    def mjpeg_gen(self):
+        period = 1.0 / max(1, self.stream_fps)
         while True:
             t0 = time.time()
             with self._lock:
@@ -62,7 +69,7 @@ class CerberusRobotTerminalServer:
         # Capture/process loop: updates shared JSON and JPEG once per cycle
         while True:
             t0 = time.time()
-            wait_for_second = 1.0 / max(1, _TEMP_FPS_CAP_)
+            wait_for_second = 1.0 / max(1, self.control_hz)
             try:
                 res = self.robot_control.scan_enemy()
             except Exception as e:
@@ -144,11 +151,22 @@ class CerberusRobotTerminalServer:
         threading.Thread(target=self._udp_loop, daemon=True).start()
         # Blocking HTTP server (no reloader so threads are preserved)
         self.app.run(host=self.host, port=self.http_port, threaded=True, use_reloader=False, debug=False)
+    
+    def _load_config(self, config_file):
+        try:
+            with open(config_file, 'r') as f:
+                config = yaml.safe_load(f)
+                print(f"[SERV] Loaded config: {config}")
+                return config
+        except Exception as e:
+            print(f"[SERV] Error loading config: {e}")
+            return {}
+        pass
 
 if __name__ == "__main__":
     # One backend instance shared across UDP and Flask
     server = CerberusRobotTerminalServer(
-        host="0.0.0.0", udp_port=5001, http_port=5100,
-        return_image=True, control_turret=True, auto_aim=True
+        # host="0.0.0.0", udp_port=5001, http_port=5100,
+        # return_image=True, control_turret=True, auto_aim=True
     )
     server.start()

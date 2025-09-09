@@ -268,6 +268,10 @@ class CBTurretControl: # this should be top level robot controller later
     def release_cv2(self):
         self.cv2.release()
 
+    # on destroy release cv2
+    def __del__(self):
+        self.release_cv2()
+
 
 # if __name__ == "__main__":
 #     aiTurret = CBRobotControl()
