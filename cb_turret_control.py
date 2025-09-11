@@ -109,7 +109,7 @@ class CBTurretControl: # this should be top level robot controller later
                 # self.turret_control_base = BaseController('/dev/ttyAMA0', 115200)
                 # self.turret_control_base.send_command({"T": 900, "main": 3, "module": 2})
 
-                # FIXME: CerberusBaseController should have wrapper functions for gimbal_ctrl and lights_ctrl
+                # FIXME: use robot_control's low level control 
                 self.turret_base_control.base_control_low.gimbal_ctrl(0, 0, self.turret_speed, self.turret_acc) 
                 self.turret_base_control.base_control_low.lights_ctrl(1, 1)
                 self.turret_last_pan = 0

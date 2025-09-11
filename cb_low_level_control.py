@@ -1,15 +1,19 @@
 from base_ctrl import BaseController
 import time
 
-_SERIAL_PORT_ = '/dev/ttyAMA0' # UGV_BEAST_PI5
-_BAUD_RATE_ = 115200
+# # Configuration for UGV Beast Pi5
+# ROBOT_TYPE: 'UGV_BEAST_PI5'
+# LOW_LEVEL_CONTROL_SERIAL_PORT: '/dev/ttyAMA0' # UGV_BEAST_PI5
+# #LOW_LEVEL_CONTROL_SERIAL_PORT: '/dev/ttyTHS1' # UGV_ROVER_JETSON_(ORIN? NX?)
+# LOW_LEVEL_CONTROL_BAUD_RATE: 115200
 
 
 class CBLowLevelControl():
 
 
-    def __init__(self):
-        self.base_control_low = BaseController(_SERIAL_PORT_, _BAUD_RATE_)
+    def __init__(self, config):
+        self.config = config
+        self.base_control_low = BaseController(config["LOW_LEVEL_CONTROL_SERIAL_PORT"], config["LOW_LEVEL_CONTROL_BAUD_RATE"])
         self.base_control_low.send_command({"T": 900, "main": 3, "module": 2}) # UGV Beast PI5
 
     def send_command(self, command):

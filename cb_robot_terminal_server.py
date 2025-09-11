@@ -1,6 +1,6 @@
 # cb ai turret udp + flask mjpeg server
 import yaml
-from cb_low_level_control import CBLowLevelControl
+# from cb_low_level_control import CBLowLevelControl
 from cb_robot_control import CBRobotControl
 import socket, time, json, threading
 from typing import Optional
@@ -21,21 +21,21 @@ class CerberusRobotTerminalServer:
 
         self.config = self._load_config(config_file)
 
-        self.host = self.config.get("ROBOT_TERMINAL_SERVER_HOST", "0.0.0.0")
-        self.udp_port = self.config.get("ROBOT_TERMINAL_SERVER_UDP_PORT", 5001)
-        self.http_port = self.config.get("ROBOT_TERMINAL_SERVER_HTTP_PORT", 5100)
-        self.control_hz = self.config.get("ROBOT_TERMINAL_SERVER_ROBOT_CONTROL_HZ", 60)
-        self.stream_fps = self.config.get("ROBOT_TERMINAL_SERVER_STREAM_FPS", 15)
+        self.host = self.config.get("ROBOT_TERMINAL_SERVER_HOST") #, "0.0.0.0")
+        self.udp_port = self.config.get("ROBOT_TERMINAL_SERVER_UDP_PORT") #, 5001)
+        self.http_port = self.config.get("ROBOT_TERMINAL_SERVER_HTTP_PORT") # , 5100)
+        self.control_hz = self.config.get("ROBOT_TERMINAL_SERVER_ROBOT_CONTROL_HZ") # , 60)
+        self.stream_fps = self.config.get("ROBOT_TERMINAL_SERVER_STREAM_FPS") # , 15)
         
         # UDP socket
         self.udp_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp_server.bind((self.host, self.udp_port))
 
         # Shared backend (single instance)
-        self.low_level_control = CBLowLevelControl()        
+        # self.low_level_control = CBLowLevelControl(self.config)
         self.robot_control = CBRobotControl(
             config=self.config,
-            cb_low_level_control=self.low_level_control            
+            # cb_low_level_control=self.low_level_control            
         )
 
         # Shared state
