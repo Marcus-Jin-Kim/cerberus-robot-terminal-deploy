@@ -3,12 +3,16 @@ import time
 
 class CBBodyControl():
 
-    def __init__(self, base_control_low:CBLowLevelControl): #, robot_type="WS_UGV_BEAST_PI5"):
+    def __init__(self, config, base_control_low:CBLowLevelControl): #, robot_type="WS_UGV_BEAST_PI5"):
+        self.config = config
         # self.robot_type = robot_type
         self.base = base_control_low
-        self.default_linear_speed = 0.2  # Default speed in m/s
-        self.default_turn_speed = 0.2
-        self.default_duration = 0.5  # Default duration in seconds
+
+
+
+        self.default_linear_speed = self.config["BODY_DEFAULT_LINEAR_SPEED"]  # 0.2  # Default speed in m/s
+        self.default_turn_speed = self.config["BODY_DEFAULT_TURN_SPEED"]
+        self.default_duration = self.config["BODY_DEFAULT_MOVE_DURATION"] # 0.5  # Default duration in seconds
 
     def forward(self, speed, duration):
 
