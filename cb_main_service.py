@@ -4,6 +4,14 @@ import subprocess
 from pathlib import Path
 import sys
 
+_ROBOT_TYPE_UGV_RPI_ = "UGV_RPI"
+
+
+def find_robot_type() -> str:
+    if "raspberrypi" in os.uname().nodename.lower() or "raspberrypi" in os.uname().machine.lower():
+        return _ROBOT_TYPE_UGV_RPI_
+    return "unknown"
+
 def run_bash(script_name: str, script_dir: Path) -> subprocess.Popen:
     script_path = script_dir / script_name
     if not script_path.exists():
@@ -27,18 +35,21 @@ def run_bash(script_name: str, script_dir: Path) -> subprocess.Popen:
 
 def main():
     # Base directory = folder containing this Python file
-    script_dir = Path(__file__).resolve().parent
+    # script_dir = Path(__file__).resolve().parent
     # If on Raspberry Pi, optionally change to /home/ws if your scripts live there
-    if "raspberrypi" in os.uname().nodename.lower() or "raspberrypi" in os.uname().machine.lower():
+    robot_type = find_robot_type()    
+    print(f"[TYPE] robot_type={robot_type}")
+
+    if robot_type == _ROBOT_TYPE_UGV_RPI_:
         # Prefer absolute paths over chdir; but if your scripts are in /home/ws, set script_dir accordingly
-        if (Path("/home/ws") / "cb_subsystem_ros2_nav.sh").exists():
-            script_dir = Path("/home/ws")
+        os.chdir("/home/ws/cb")
+        script_dir = Path("/home/ws/cb")
 
     print(f"[CWD] {os.getcwd()}")
     print(f"[DIR] script_dir={script_dir}")
 
     p1 = run_bash("cb_subsystem_ros2_nav.sh", script_dir)
-    p2 = run_bash("cb_subsystem_robot_terminal_server.sh", script_dir)
+    p2 = run_bash("cb_subsystem_terminal_server.sh", script_dir)
 
     if p1 is None or p2 is None:
         print("[WARN] one or more scripts failed to launch (see logs).")

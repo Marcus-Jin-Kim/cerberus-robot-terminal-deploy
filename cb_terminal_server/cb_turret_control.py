@@ -111,11 +111,13 @@ class CBTurretControl: # this should be top level robot controller later
                 # self.turret_control_base.send_command({"T": 900, "main": 3, "module": 2})
 
                 # FIXME: use robot_control's low level control 
-                self.turret_base_control.base_control_low.gimbal_ctrl(0, 0, self.turret_speed, self.turret_acc) 
-                self.turret_base_control.base_control_low.lights_ctrl(1, 1)
+                self.turret_low_level_control.base_control_low.gimbal_ctrl(0, 0, self.turret_speed, self.turret_acc) 
+                self.turret_low_level_control.base_control_low.lights_ctrl(1, 1)
+                
                 self.turret_last_pan = 0
                 self.turret_last_tilt = 0
 
+                
                 print(f"[CB]Turret control base initialized.")
 
                 self.turret_is_aiming = False
@@ -128,6 +130,8 @@ class CBTurretControl: # this should be top level robot controller later
                 # self.control_turret = False
 
 
+        time.sleep(1) # wait for gimbal to init
+        self.turret_low_level_control.base_control_low.lights_ctrl(0,0)
         print(f"[CB]AITurretBackend init: control_turret={self.control_turret}, auto_aim={self.auto_aim}, return_image={self.return_image}")                # self.auto_aim = False
 
     def detect_pose(self):

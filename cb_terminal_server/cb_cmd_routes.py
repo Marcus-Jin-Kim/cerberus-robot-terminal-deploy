@@ -1,4 +1,4 @@
-from cb_robot_terminal_server import CerberusRobotTerminalServer
+from cb_terminal_server import CerberusRobotTerminalServer
 from flask import Blueprint, Response, jsonify, request
 import time
 
