@@ -1,41 +1,30 @@
-#!/bin/bash
-#cd ugv_ws
-#./ros2_humble.sh
-# ./ugv_ws/ros2_humble.sh
+#!/usr/bin/env bash
+# set -euo pipefail
 
-#!/bin/bash
+container_name="$1"
+if [ -z "$container_name" ]; then
+  echo "[ERR] usage: $0 <container_name>" >&2
+  exit 1
+fi
 
-# Function to start the container
-enter_container() {
-    if find / -name "ugv_jetson" 2>/dev/null | grep -q "ugv_jetson"; then
-        container_name="ugv_jetson_ros_humble"
-    else
-        container_name="ugv_rpi_ros_humble"
-    fi
+echo "[NAV] container=${container_name}"
 
-    echo "Entering the container..."
-    docker start "$container_name"
-    if [ $? -eq 0 ]; then
-        echo "Container started successfully."
-        # echo "Executing docker exec command to open a bash shell in the container..."
-        # docker exec -it "$container_name" /bin/bash -c "service ssh start"
-        # if [ $? -eq 0 ]; then
-        #     echo "Opened bash shell in the container."
-        # else
-        #     echo "Failed to open bash shell in the container."
-        # fi
-        echo "Running /root/cb.sh..."
-        #docker exec -d "$container_name" bash -lc '/root/cb.sh'
-        docker exec -it "$container_name" /root/cb.sh
+# Ensure docker is available and daemon is up
+if ! command -v docker >/dev/null 2>&1; then
+  echo "[ERR] docker not found in PATH" >&2
+  exit 1
+fi
+for i in $(seq 1 30); do
+  if docker info >/dev/null 2>&1; then break; fi
+  sleep 1
+done
 
-    else
-        echo "Failed to enter the container, please check the error."
-    fi
-}
-# Call the function
-enter_container
+# Start the container if not running
+if ! docker inspect -f '{{.State.Running}}' "$container_name" 2>/dev/null | grep -q true; then
+  echo "[NAV] starting container..."
+  docker start "$container_name"
+fi
 
-
-
-
-# docker exec -it ugv_rpi_ros_humble /root/cb.sh
+echo "[NAV] exec /root/cb.sh in container..."
+# No -t to avoid "the input device is not a TTY" under systemd
+docker exec "$container_name" bash -lc '/root/cb.sh'

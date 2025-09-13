@@ -1,0 +1,26 @@
+[Unit]
+Description=Cerberus Robot Client
+After=network-online.target docker.service
+Requires=docker.service
+ConditionPathExists=/run/user/1000/pulse/native
+
+[Service]
+Type=simple
+User=ws
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+ExecStartPre=/bin/sh -c 'for i in $(seq 1 120); do [ -S /run/user/1000/pulse/native ] && exit 0; sleep 1; done; echo "pulse socket missing" >&2; exit 1'
+# /bin/sh -c '…' runs a small shell script.
+# for i in $(seq 1 120); do … done loops up to 120 times (~120 seconds).
+# [ -S /run/user/1000/pulse/native ] checks if that path exists and is a UNIX socket.
+# If the socket exists, exit 0 immediately (service proceeds to ExecStart).
+# Otherwise sleep 1 and try again.
+# After 120 tries, echo "pulse socket missing" to stderr and exit 1 (service start fails).
+
+ExecStart=/home/ws/cb/cb_main_service.py
+Restart=on-failure
+RestartSec=5
+WorkingDirectory=/home/ws/cb
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target
