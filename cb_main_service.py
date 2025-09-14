@@ -34,6 +34,16 @@ def find_robot_type():
     else:
         raise Exception(f"Cannot determine robot type from uname: {os.uname()}")
 
+    # read from /etc/machine-id if possible
+    machine_id = ""
+    try:
+        with open("/etc/machine-id", "r") as f:
+            machine_id = f.read().strip()
+    except Exception as e:
+        print(f"[ERROR] cannot read /etc/machine-id: {e}", file=sys.stderr)
+        raise e
+    # TODO QUERY master server for robot_uid later
+    
     robot_uid = ___DEV_TEST_ROBOT_UID_
 
     return robot_type, host_home_dir, ros2_container_name, docker_script_filename, robot_uid
