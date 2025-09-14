@@ -8,25 +8,37 @@ _CONST_CB_ROBOT_TYPE_UGV_RPI_ = "UGV_RPI"
 _CONST_CB_ROBOT_TYPE_UGV_JETSON =  "UGV_JETSON"
 _CONST_ROS2_CONTAINER_UGV_RPI_ = "ugv_rpi_ros_humble"
 _CONST_ROS2_CONTAINER_UGV_JETSON_ = "ugv_jetson_ros_humble"
+_CONST_HOST_HOME_DIR_UGV_RPI_ = "/home/ws"
+_CONST_HOST_HOME_DIR_UGV_JETSON_ = "/home/jetson"
+_CONST_DOCKER_BRINGUP_MAIN_SCRIPT_FILENAME_RPI_ = "cb_bringup_main_rpi.sh"
+_CONST_DOCKER_BRINGUP_MAIN_SCRIPT_FILENAME_JETSON_ = "cb_bringup_main_jetson.sh"
 
-# global g_robot_type
-# global g_ros2_container_name
+# TEMP until gets a server
+___DEV_TEST_ROBOT_UID_ = "beast001"
 
-def find_robot_type() -> str:
+def find_robot_type():
     robot_type = ""
+    host_home_dir = ""
+    robot_uid = ""
     ros2_container_name = ""
     if "raspberrypi" in os.uname().nodename.lower() or "raspberrypi" in os.uname().machine.lower():
         robot_type = _CONST_CB_ROBOT_TYPE_UGV_RPI_
+        host_home_dir = _CONST_HOST_HOME_DIR_UGV_RPI_        
         ros2_container_name = _CONST_ROS2_CONTAINER_UGV_RPI_
-    elif "jetson" in os.uname().nodename.lower() or "jetson" in os.uname().machine.lower():
+        docker_script_filename = _CONST_DOCKER_BRINGUP_MAIN_SCRIPT_FILENAME_RPI_
+    elif "tegra" in os.uname().nodename.lower() or "tegra" in os.uname().machine.lower():
         robot_type = _CONST_CB_ROBOT_TYPE_UGV_JETSON
+        host_home_dir = _CONST_HOST_HOME_DIR_UGV_JETSON_
         ros2_container_name = _CONST_ROS2_CONTAINER_UGV_JETSON_
+        docker_script_filename = _CONST_DOCKER_BRINGUP_MAIN_SCRIPT_FILENAME_JETSON_
     else:
         raise Exception(f"Cannot determine robot type from uname: {os.uname()}")
 
-    return robot_type, ros2_container_name
+    robot_uid = ___DEV_TEST_ROBOT_UID_
 
-def run_bash(script_name: str, params: str, script_dir: Path) -> subprocess.Popen:
+    return robot_type, host_home_dir, ros2_container_name, docker_script_filename, robot_uid
+
+def run_bash(script_name: str, params: list, script_dir: Path) -> subprocess.Popen:
     script_path = script_dir / script_name
     if not script_path.exists():
         print(f"[ERR] script not found: {script_path}", file=sys.stderr)
@@ -38,9 +50,9 @@ def run_bash(script_name: str, params: str, script_dir: Path) -> subprocess.Pope
     stamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
     stdout_f = open(log_dir / f"{script_name}.{stamp}.out", "ab", buffering=0)
     stderr_f = open(log_dir / f"{script_name}.{stamp}.err", "ab", buffering=0)
-    print(f"[RUN] {script_path}")
+    print(f"[RUN] {script_path}, {params}")
     return subprocess.Popen(
-        ["/bin/bash", str(script_path), params],
+        ["/bin/bash", str(script_path), *params],
         cwd=str(script_dir),
         stdout=stdout_f,
         stderr=stderr_f,
@@ -58,50 +70,32 @@ def check_docker(_try=30) -> bool:
         time.sleep(1)
     return False
 
-# def _docker_ping(docker_host=None, timeout=1.0) -> bool:
-#     docker_host = docker_host or os.environ.get("DOCKER_HOST", "unix:///var/run/docker.sock")
-#     try:
-#         if docker_host.startswith("unix://"):
-#             path = docker_host[len("unix://"):]
-#             s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-#             s.settimeout(timeout)
-#             s.connect(path)
-#             s.sendall(b"GET /_ping HTTP/1.0\r\nHost: docker\r\n\r\n")
-#             data = s.recv(64)
-#             s.close()
-#             return b"OK" in data
-#         elif docker_host.startswith("tcp://"):
-#             u = urllib.parse.urlparse(docker_host)
-#             host, port = u.hostname, u.port or 2375
-#             with socket.create_connection((host, port), timeout=timeout) as s:
-#                 s.sendall(b"GET /_ping HTTP/1.0\r\nHost: docker\r\n\r\n")
-#                 return b"OK" in s.recv(64)
-#         else:
-#             return False
-#     except Exception:
-#         return False
-# def _check_docker_once() -> bool:
-#     try:
-#         result = subprocess.run( ["docker", "info"],
-#             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-#         return result.returncode == 0
-#     except (subprocess.CalledProcessError, FileNotFoundError):
-#         return False
 
 def main():
     # Base directory = folder containing this Python file
     # script_dir = Path(__file__).resolve().parent
     # If on Raspberry Pi, optionally change to /home/ws if your scripts live there
-    robot_type, ros2_container_name = find_robot_type()    
-    print(f"[TYPE] robot_type={robot_type}")
+    robot_type, host_home_dir, ros2_container_name, docker_script_filename, robot_uid = find_robot_type()
+    print(f"[TYPE] robot_type={robot_type} host_home_dir={host_home_dir} ros2_container={ros2_container_name} robot_uid={robot_uid}")
 
-    if robot_type == _CONST_CB_ROBOT_TYPE_UGV_RPI_:
-        # Prefer absolute paths over chdir; but if your scripts are in /home/ws, set script_dir accordingly
-        os.chdir("/home/ws/cb")
-        script_dir = Path("/home/ws/cb")
+    
+    host_script_dir = Path(f"{host_home_dir}/cb")
+    docker_script_path = f"{host_script_dir}/cb_docker_tools/{docker_script_filename}"
+    
+    # if ROBOT_TYPE == _CONST_CB_ROBOT_TYPE_UGV_RPI_:
+    #     # Prefer absolute paths over chdir; but if your scripts are in /home/ws, set script_dir accordingly
+    #     os.chdir(_CONST_HOST_HOME_DIR_UGV_RPI_)
+    #     script_dir = Path(f"{_CONST_HOST_HOME_DIR_UGV_RPI_}/cb")
+    # elif robot_type == _CONST_CB_ROBOT_TYPE_UGV_JETSON:
+    #     os.chdir(_CONST_HOST_HOME_DIR_UGV_JETSON_)
+    #     script_dir = Path(f"{_CONST_HOST_HOME_DIR_UGV_JETSON_}/cb")
+    # else:
+    #     raise Exception(f"Unsupported robot type: {robot_type}")
 
+    print(f"[DIR] host script_dir={host_script_dir}")
+    os.chdir(host_script_dir)
     print(f"[CWD] {os.getcwd()}")
-    print(f"[DIR] script_dir={script_dir}")
+    
 
     print("[DOCK] checking docker service is running...")
     if not check_docker():
@@ -119,10 +113,16 @@ def main():
 
     print(f"[DOCK] starting subsystems...")
 
+    # build ros2 docker params
+    docker_params = [
+        ros2_container_name,
+        docker_script_path,
+        robot_uid
+    ]
 
-    p1 = run_bash(f"cb_subsystem_ros2_nav.sh", ros2_container_name, script_dir)
+    p1 = run_bash(f"cb_subsystem_ros2_nav.sh", docker_params, host_script_dir)
     # p2 = run_bash("ls", script_dir)  # replace with actual script
-    p2 = run_bash("cb_subsystem_terminal_server.sh", "", script_dir)
+    p2 = run_bash("cb_subsystem_terminal_server.sh", [], host_script_dir)
 
     if p1 is None or p2 is None:
         print("[WARN] one or more scripts failed to launch (see logs).")

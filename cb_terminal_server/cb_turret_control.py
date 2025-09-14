@@ -58,6 +58,8 @@ class CBTurretControl: # this should be top level robot controller later
         self.turret_cam_fov = self.config["TURRET_CAM_FOV"]
         self.return_image = self.config["TURRET_CAM_RETURN_IMAGE"]
 
+        print(f"[CB]Turret camera: {self.turret_cam_fps_cap}FPS, JPEG quality={self.turret_cam_jpeg_quality}, return_image={self.return_image}")
+
         # Init camera
         self.cv2 = cv2.VideoCapture(self.turret_cam_device_index)
 
@@ -144,9 +146,12 @@ class CBTurretControl: # this should be top level robot controller later
 
         h, w = frame_bgr.shape[:2]
 
-        # MediaPipe expects RGB input
+        # Downscale for pose to reduce CPU
+        small_w, small_h = 320, 240 # move to config later
         frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-        results = self.pose.process(frame_rgb)
+        frame_small = cv2.resize(frame_rgb, (small_w, small_h), interpolation=cv2.INTER_AREA)
+
+        results = self.pose.process(frame_small)
 
         # Draw landmarks and extract NOSE (index 0)
         if results.pose_landmarks:
@@ -278,6 +283,51 @@ class CBTurretControl: # this should be top level robot controller later
     # on destroy release cv2
     def __del__(self):
         self.release_cv2()
+
+
+
+# test turret control
+if __name__ == "__main__":# T
+    import yaml, os, sys
+    # os.chdir("/home/ws/cb")
+    # # sys.path.append("../")
+    # sys.path.append("/home/ws/ugv_rpi")  # for cb_low_level_control
+    
+    with open("cb_config.yaml", "r") as f:
+        config = yaml.safe_load(f)
+    
+    # override config
+    config["TURRET_CONTROL_ENABLED"] = True
+    config["TURRET_AUTO_AIM_ENABLED"] = True
+    config["TURRET_CAM_RETURN_IMAGE"] = False
+
+    # get CBLowLevelControl 
+    cb_low_level_control = CBLowLevelControl(config)
+
+    aiTurret = CBTurretControl(config, cb_low_level_control)
+    try:
+        while True:
+            wait_for_second = 1.0 / max(1, aiTurret.turret_cam_fps_cap)
+            t0 = time.time()
+            r = aiTurret.detect_pose()
+            # print(r["e_msg"])
+            # if r["OK"]:
+            #     if r["pose_detected"]:
+            #         print(f"[POSE] {len(r['data']['landmarks'])} landmarks detected.")
+            #         # print(r["data"])
+            #     else:
+            #         print("[POSE] no pose detected.")
+            # else:
+            #     print(f"[POSE] ERROR: {r['e_msg']}")
+            #     continue
+
+            dt = time.time() - t0
+            if dt < wait_for_second:
+                time.sleep(wait_for_second - dt)
+                continue
+    finally:
+        aiTurret.release_cv2()
+        print("aiTurret CV2 released.")
 
 
 # if __name__ == "__main__":

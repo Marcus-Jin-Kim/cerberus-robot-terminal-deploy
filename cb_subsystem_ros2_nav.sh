@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # set -euo pipefail
 
-container_name="$1"
-if [ -z "$container_name" ]; then
-  echo "[ERR] usage: $0 <container_name>" >&2
+if [ "$#" -ne 3 ]; then
+  echo "Usage: $0 <container_name> <docker_script_path> <robot_uid>" >&2
   exit 1
 fi
 
-echo "[NAV] container=${container_name}"
+container_name="$1"
+docker_script_path="$2"   # absolute path inside container
+robot_uid="$3"
+
+echo "[NAV] container=${container_name} docker_script=${docker_script_path} robot_uid=${robot_uid}"
 
 # Ensure docker is available and daemon is up
 if ! command -v docker >/dev/null 2>&1; then
@@ -21,10 +24,18 @@ done
 
 # Start the container if not running
 if ! docker inspect -f '{{.State.Running}}' "$container_name" 2>/dev/null | grep -q true; then
-  echo "[NAV] starting container..."
+  echo "[NAV] starting container... ${container_name}"
   docker start "$container_name"
 fi
 
-echo "[NAV] exec /root/cb.sh in container..."
+# echo "[NAV] exec /root/cb.sh in container..."
+# # No -t to avoid "the input device is not a TTY" under systemd
+# docker exec "$container_name" bash -lc '/root/cb.sh'
+
+echo "[NAV] exec ${docker_script_path} '${robot_uid}' in container..."
 # No -t to avoid "the input device is not a TTY" under systemd
-docker exec "$container_name" bash -lc '/root/cb.sh'
+if ! docker exec ${container_name} bash -lc "exec ${docker_script_path} ${robot_uid}"; then
+  rc=$?
+  echo "[ERR] docker exec failed with code $rc" >&2
+  exit "$rc"
+fi

@@ -26,7 +26,9 @@ class CerberusRobotTerminalServer:
         self.http_port = self.config.get("ROBOT_TERMINAL_SERVER_HTTP_PORT") # , 5100)
         self.control_hz = self.config.get("ROBOT_TERMINAL_SERVER_ROBOT_CONTROL_HZ") # , 60)
         self.stream_fps = self.config.get("ROBOT_TERMINAL_SERVER_STREAM_FPS") # , 15)
-        
+
+        print(f"[SERV] Robot control HZ = {self.control_hz}")
+
         # UDP socket
         self.udp_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp_server.bind((self.host, self.udp_port))
