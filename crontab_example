@@ -1,0 +1,4 @@
+@reboot sleep 3 && whoami && pulseaudio --start && sleep 2 && XDG_RUNTIME_DIR=/run/user/1000
+@reboot sleep 30 && cd /home/jetson/cb && python cb_main_service.py >> cb_main.log 2>&1
+#leading @ was ommited. stupid
+#~/ugv_jetson/ugv-env/bin/python ~/ugv_jetson/app.py >> ~/ugv.log 2>&1

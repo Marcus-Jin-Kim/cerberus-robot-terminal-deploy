@@ -76,5 +76,6 @@ def create_routes_blueprint(robot_control_server:CerberusRobotTerminalServer):
         print(f"{os.getcwd()}")
         os.chdir("..")
         os.system("sudo python cb_restart_all.py &")
+        return jsonify({"OK": True}),200
 
     return bp
