@@ -3,52 +3,101 @@ import os
 import subprocess
 from pathlib import Path
 import sys, time, socket, urllib.parse
+import urllib.request
+import yaml
+import json
 
-_CONST_CB_ROBOT_TYPE_UGV_RPI_ = "UGV_RPI"
-_CONST_CB_ROBOT_TYPE_UGV_JETSON =  "UGV_JETSON"
-_CONST_ROS2_CONTAINER_UGV_RPI_ = "ugv_rpi_ros_humble"
-_CONST_ROS2_CONTAINER_UGV_JETSON_ = "ugv_jetson_ros_humble"
-_CONST_HOST_HOME_DIR_UGV_RPI_ = "/home/ws"
-_CONST_HOST_HOME_DIR_UGV_JETSON_ = "/home/jetson"
-_CONST_DOCKER_BRINGUP_MAIN_SCRIPT_FILENAME_RPI_ = "cb_bringup_main_rpi.sh"
-_CONST_DOCKER_BRINGUP_MAIN_SCRIPT_FILENAME_JETSON_ = "cb_bringup_main_jetson.sh"
+_CB_MASTER_SERVER_HOSTNAMES_ = ["192.168.137.1", "192.168.0.20"]
+
+# _CONST_CB_ROBOT_TYPE_UGV_RPI_ = "UGV_RPI"
+# _CONST_CB_ROBOT_TYPE_UGV_JETSON =  "UGV_JETSON"
+# _CONST_ROS2_CONTAINER_UGV_RPI_ = "ugv_rpi_ros_humble"
+# _CONST_ROS2_CONTAINER_UGV_JETSON_ = "ugv_jetson_ros_humble"
+# _CONST_HOST_HOME_DIR_UGV_RPI_ = "/home/ws"
+# _CONST_HOST_HOME_DIR_UGV_JETSON_ = "/home/jetson"
+# _CONST_DOCKER_BRINGUP_MAIN_SCRIPT_FILENAME_RPI_ = "cb_bringup_main_rpi.sh"
+# _CONST_DOCKER_BRINGUP_MAIN_SCRIPT_FILENAME_JETSON_ = "cb_bringup_main_jetson.sh"
 
 # TEMP until gets a server
 ___DEV_TEST_ROBOT_UID_ = "beast001"
 
-def find_robot_type():
+def get_robot_config():
+
+    machine_id = ""
+
+    robot_os = ""
+    robot_chassis = ""
     robot_type = ""
     host_home_dir = ""
     robot_uid = ""
     ros2_container_name = ""
-    if "raspberrypi" in os.uname().nodename.lower() or "raspberrypi" in os.uname().machine.lower():
-        robot_type = _CONST_CB_ROBOT_TYPE_UGV_RPI_
-        host_home_dir = _CONST_HOST_HOME_DIR_UGV_RPI_        
-        ros2_container_name = _CONST_ROS2_CONTAINER_UGV_RPI_
-        docker_script_filename = _CONST_DOCKER_BRINGUP_MAIN_SCRIPT_FILENAME_RPI_
-    elif "tegra" in os.uname().nodename.lower() or "tegra" in os.uname().machine.lower():
-        robot_type = _CONST_CB_ROBOT_TYPE_UGV_JETSON
-        host_home_dir = _CONST_HOST_HOME_DIR_UGV_JETSON_
-        ros2_container_name = _CONST_ROS2_CONTAINER_UGV_JETSON_
-        docker_script_filename = _CONST_DOCKER_BRINGUP_MAIN_SCRIPT_FILENAME_JETSON_
-    else:
-        raise Exception(f"Cannot determine robot type from uname: {os.uname()}")
 
-    # read from /etc/machine-id if possible
-    machine_id = ""
+    # if "raspberrypi" in os.uname().nodename.lower() or "raspberrypi" in os.uname().machine.lower():
+    #     robot_type = _CONST_CB_ROBOT_TYPE_UGV_RPI_
+    #     host_home_dir = _CONST_HOST_HOME_DIR_UGV_RPI_        
+    #     ros2_container_name = _CONST_ROS2_CONTAINER_UGV_RPI_
+    #     docker_script_filename = _CONST_DOCKER_BRINGUP_MAIN_SCRIPT_FILENAME_RPI_
+    # elif "tegra" in os.uname().nodename.lower() or "tegra" in os.uname().machine.lower():
+    #     robot_type = _CONST_CB_ROBOT_TYPE_UGV_JETSON
+    #     host_home_dir = _CONST_HOST_HOME_DIR_UGV_JETSON_
+    #     ros2_container_name = _CONST_ROS2_CONTAINER_UGV_JETSON_
+    #     docker_script_filename = _CONST_DOCKER_BRINGUP_MAIN_SCRIPT_FILENAME_JETSON_
+    # else:
+    #     raise Exception(f"Cannot determine robot type from uname: {os.uname()}")
+
     try:
+        if os.path.exists("/home/jetson") and os.path.exists("/home/jetson/ugv_jetson"):
+            robot_os = "JETSON"
+            ugv_config = yaml.safe_load(open("/home/jetson/ugv_jetson/config.yaml", 'r'))
+            robot_chassis = ugv_config.get("base_config").get("robot_name")
+        elif os.path.exists("/home/ws") and os.path.exists("/home/ws/ugv_rpi"):
+            robot_os = "RPI"
+            ugv_config = yaml.safe_load(open("/home/ws/ugv_rpi/config.yaml", 'r'))
+            robot_chassis = ugv_config.get("base_config").get("robot_name")
+
         with open("/etc/machine-id", "r") as f:
             machine_id = f.read().strip()
+
+        robot_config = None
+        for hostname in _CB_MASTER_SERVER_HOSTNAMES_:
+            
+            try:
+                query = urllib.parse.urlencode({
+                    "robot-os": robot_os or "",
+                    "robot-chassis": robot_chassis or ""
+                })
+                mid_q = urllib.parse.quote(machine_id, safe="")
+                url = f"http://{hostname}:8000/get-robot-config/{mid_q}?{query}"
+                print(f"[QUERY] {url}")
+                with urllib.request.urlopen(url, timeout=5) as response:
+                    if response.status == 200:
+                        resp_json = response.read().decode('utf-8')        
+                        resp = json.loads(resp_json)
+                        if resp.get("OK") and "robot_config" in resp:
+                            robot_config = resp["robot_config"]
+                            break
+            
+            except Exception as e:
+                print(f"[WARN] cannot query master server at {hostname}: {e}", file=sys.stderr)
+                continue
+        
+        if robot_config is None:
+            raise Exception(f"Cannot find robot config from any master server {_CB_MASTER_SERVER_HOSTNAMES_}")
+
+        print(f"[INFO] got robot_config for machine_id: {machine_id}")
+        # write down to local file
+        with open("cb_terminal_server/cb_config.yaml", "w") as f:
+            yaml.safe_dump(robot_config, f)
+        print(f"[INFO] wrote local config to cb_terminal_server/cb_config.yaml")
+        return robot_config
+
+
     except Exception as e:
-        print(f"[ERROR] cannot read /etc/machine-id: {e}", file=sys.stderr)
+        print(f"[ERROR] cannot determine robot config: {e}", file=sys.stderr)        
         raise e
-    # TODO QUERY master server for robot_uid later
-    
-    robot_uid = ___DEV_TEST_ROBOT_UID_
 
-    return robot_type, host_home_dir, ros2_container_name, docker_script_filename, robot_uid
 
-def run_bash(script_name: str, params: list, script_dir: Path) -> subprocess.Popen:
+def run_bash(script_name: str, params: list, script_dir: Path, debug=False) -> subprocess.Popen:
     script_path = script_dir / script_name
     if not script_path.exists():
         print(f"[ERR] script not found: {script_path}", file=sys.stderr)
@@ -58,8 +107,16 @@ def run_bash(script_name: str, params: list, script_dir: Path) -> subprocess.Pop
     log_dir = script_dir / "logs"
     log_dir.mkdir(exist_ok=True)
     stamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-    stdout_f = open(log_dir / f"{script_name}.{stamp}.out", "ab", buffering=0)
+
+    # rotate log using python logging module
+
+
+    stdout_f = subprocess.DEVNULL
+    if debug:
+        stdout_f = open(log_dir / f"{script_name}.{stamp}.out", "ab", buffering=0)
     stderr_f = open(log_dir / f"{script_name}.{stamp}.err", "ab", buffering=0)
+
+
     print(f"[RUN] {script_path}, {params}")
     return subprocess.Popen(
         ["/bin/bash", str(script_path), *params],
@@ -85,12 +142,25 @@ def main():
     # Base directory = folder containing this Python file
     # script_dir = Path(__file__).resolve().parent
     # If on Raspberry Pi, optionally change to /home/ws if your scripts live there
-    robot_type, host_home_dir, ros2_container_name, docker_script_filename, robot_uid = find_robot_type()
+    robot_config = get_robot_config()
+
+    robot_type = robot_config.get("ROBOT_TYPE")
+    host_home_dir = robot_config.get("HOST_HOME_DIR")
+    docker_home_dir = robot_config.get("DOCKER_HOME_DIR")
+    ros2_container_name = robot_config.get("ROS2_CONTAINER_NAME")
+    docker_script_filename = robot_config.get("DOCKER_BRINGUP_MAIN_SCRIPT_FILENAME")
+    robot_uid = robot_config.get("ROBOT_UID")
+    
     print(f"[TYPE] robot_type={robot_type} host_home_dir={host_home_dir} ros2_container={ros2_container_name} robot_uid={robot_uid}")
 
     
     host_script_dir = Path(f"{host_home_dir}/cb")
-    docker_script_path = f"{host_script_dir}/cb_docker_tools/{docker_script_filename}"
+    docker_script_dir = Path(f"{docker_home_dir}/cb")
+    docker_script_path = f"{docker_script_dir}/cb_docker_tools/{docker_script_filename}"
+
+    # DIRTY HACK TO ENSURE SCRIPT IS EXECUTABLE
+    os.chmod(f"{host_home_dir}/cb/cb_docker_tools/{docker_script_filename}", 0o755)
+    # os.chmod(docker_script_path, 0o755)  # ensure executable
     
     # if ROBOT_TYPE == _CONST_CB_ROBOT_TYPE_UGV_RPI_:
     #     # Prefer absolute paths over chdir; but if your scripts are in /home/ws, set script_dir accordingly
@@ -130,9 +200,14 @@ def main():
         robot_uid
     ]
 
+    terminal_server_params = [
+        "/home/jetson/ugv_jetson"
+    ]
+
+    
     p1 = run_bash(f"cb_subsystem_ros2_nav.sh", docker_params, host_script_dir)
     # p2 = run_bash("ls", script_dir)  # replace with actual script
-    p2 = run_bash("cb_subsystem_terminal_server.sh", [], host_script_dir)
+    p2 = run_bash("cb_subsystem_terminal_server.sh", terminal_server_params, host_script_dir)
 
     if p1 is None or p2 is None:
         print("[WARN] one or more scripts failed to launch (see logs).")
