@@ -12,4 +12,4 @@ export PYTHONPATH="$PYTHONPATH:$base_dir"
 cd cb_terminal_server
 source cb-env/bin/activate
 # python cb_cmd.py
-python cb_terminal_server.py
+python cb_terminal_server.py & disown

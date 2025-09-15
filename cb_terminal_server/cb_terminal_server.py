@@ -1,4 +1,5 @@
 # cb ai turret udp + flask mjpeg server
+import os, sys, signal, atexit
 import yaml
 # from cb_low_level_control import CBLowLevelControl
 from cb_robot_control import CBRobotControl
@@ -14,7 +15,7 @@ import traceback
 
 class CerberusRobotTerminalServer:
 
-    def __init__(self, config_file="cb_config.yaml",                 
+    def __init__(self, config_file="../cb_config.yaml",                 
         # , host='0.0.0.0', udp_port=5001, http_port=5100,
         #    return_image_override=None, control_turret_override=None, auto_aim_override=None
          ):
@@ -153,7 +154,8 @@ class CerberusRobotTerminalServer:
         threading.Thread(target=self._udp_loop, daemon=True).start()
         # Blocking HTTP server (no reloader so threads are preserved)
         self.app.run(host=self.host, port=self.http_port, threaded=True, use_reloader=False, debug=False)
-    
+
+        
     def _load_config(self, config_file):
         try:
             with open(config_file, 'r') as f:
@@ -166,9 +168,33 @@ class CerberusRobotTerminalServer:
         pass
 
 if __name__ == "__main__":
+    # write down pid
+    pid_file_path = "../cb_pid_terminal.txt"
+    with open(pid_file_path, "w") as f:
+        f.write(str(os.getpid()) + "\n")
+
+    def _cleanup_pidfile():
+        if os.path.exists(pid_file_path):
+            os.remove(pid_file_path)
+            print("[SERV] PID file removed.")
+
+    def _on_signal(signum, frame):
+        print(f"[SERV] signal {signum} received; exiting")
+        _cleanup_pidfile()
+        sys.exit(0)
+
+    atexit.register(_cleanup_pidfile)
+    signal.signal(signal.SIGTERM, _on_signal)
+    signal.signal(signal.SIGINT, _on_signal)
+
+
     # One backend instance shared across UDP and Flask
     server = CerberusRobotTerminalServer(
         # host="0.0.0.0", udp_port=5001, http_port=5100,
         # return_image=True, control_turret=True, auto_aim=True
     )
-    server.start()
+    try:
+        server.start()
+    finally:
+        _cleanup_pidfile()
+        print("[SERV] Server stopped.")

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
+import atexit
 import os
+import signal
 import subprocess
 from pathlib import Path
 import sys, time, socket, urllib.parse
@@ -86,9 +88,9 @@ def get_robot_config():
 
         print(f"[INFO] got robot_config for machine_id: {machine_id}")
         # write down to local file
-        with open("cb_terminal_server/cb_config.yaml", "w") as f:
+        with open("cb_config.yaml", "w") as f:
             yaml.safe_dump(robot_config, f)
-        print(f"[INFO] wrote local config to cb_terminal_server/cb_config.yaml")
+        print(f"[INFO] wrote local config to ./cb_config.yaml")
         return robot_config
 
 
@@ -209,21 +211,38 @@ def main():
     # p2 = run_bash("ls", script_dir)  # replace with actual script
     p2 = run_bash("cb_subsystem_terminal_server.sh", terminal_server_params, host_script_dir)
 
-    if p1 is None or p2 is None:
-        print("[WARN] one or more scripts failed to launch (see logs).")
-
-    # Keep this supervisor alive so children aren’t reaped by a service manager
+    if p1 is None:        
+        print("[ERROR] failed to launch ros2_nav subsystem", file=sys.stderr)        
+        raise Exception("failed to launch ros2_nav subsystem")
+    if p2 is None:
+        print("[ERROR] failed to launch terminal_server subsystem", file=sys.stderr)        
+        raise Exception("failed to launch terminal_server subsystem")
+    
+    print(f"[INFO] launched subsystems, pids: {p1.pid}, {p2.pid}, waiting forever...")
     try:
-        pids = [(name, p.pid) for name, p in (("ros2_nav", p1), ("robot_term", p2)) if p is not None]
-        # pids = [(name, p.pid) for name, p in (("ros2_nav", p1),) if p is not None]
-        print(f"[PIDS] {pids}")
-        # Wait forever; or replace with a simple health check loop
-        p1_wait = p1.wait if p1 is not None else lambda: None
-        p2_wait = p2.wait if p2 is not None else lambda: None
-        p1_wait() ; p2_wait()
+        # i just want to keep this process alive, no need to wait on the subprocesses
+        while True:
+            time.sleep(10)
     except KeyboardInterrupt:
         print("[EXIT] KeyboardInterrupt received; exiting.")
         pass
 
 if __name__ == "__main__":
+    # write down pid and ensure cleanup
+    with open("cb_pid_main_service.txt", "w") as f:
+        f.write(str(os.getpid()) + "\n")
+        print(f"[SERV] wrote PID {os.getpid()} to cb_pid_main_service.txt")
+
+    def _cleanup_pidfile():
+        if os.path.exists("cb_pid_main_service.txt"):
+            os.remove("cb_pid_main_service.txt")
+            print("[SERV] main service PID file removed.")
+    def _on_signal(signum, frame):
+        print(f"[SERV] signal {signum} received; exiting")
+        _cleanup_pidfile()
+        sys.exit(0)
+    atexit.register(_cleanup_pidfile)    
+    signal.signal(signal.SIGTERM, _on_signal)
+    signal.signal(signal.SIGINT, _on_signal)
+
     main()

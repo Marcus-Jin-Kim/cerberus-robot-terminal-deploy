@@ -1,3 +1,4 @@
+import os
 from cb_terminal_server import CerberusRobotTerminalServer
 from flask import Blueprint, Response, jsonify, request
 import time
@@ -68,5 +69,12 @@ def create_routes_blueprint(robot_control_server:CerberusRobotTerminalServer):
         r = _bc.turnright(speed=speed, duration=duration)
         return jsonify(r),200
             
+
+
+    @bp.route('/admin/restart', methods = ['GET', 'POST'])
+    def admin_restart():
+        print(f"{os.getcwd()}")
+        os.chdir("..")
+        os.system("sudo python cb_restart_all.py &")
 
     return bp
