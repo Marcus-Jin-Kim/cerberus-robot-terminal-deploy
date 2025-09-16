@@ -1,16 +1,27 @@
 #!/usr/bin/env bash
 # set -euo pipefail
 
-if [ "$#" -ne 3 ]; then
-  echo "Usage: $0 <container_name> <docker_script_path> <robot_uid>" >&2
+# num parameters must not lt 3 and not gt 6
+if [ "$#" -lt 3 ] || [ "$#" -gt 6 ]; then
+  echo "Usage: $0 <container_name> <docker_script_path> <robot_uid> [<initial_pose_x> <initial_pose_y> <initial_pose_yaw>]" >&2
   exit 1
 fi
 
 container_name="$1"
 docker_script_path="$2"   # absolute path inside container
 robot_uid="$3"
+initial_pose_x=0.0
+initial_pose_y=0.0
+initial_pose_yaw=0.0
+if [ "$#" -ge 4 ]; then
+  initial_pose_x="$4"
+  initial_pose_y="$5"
+  initial_pose_yaw="$6"
+fi
 
-echo "[NAV] container=${container_name} docker_script=${docker_script_path} robot_uid=${robot_uid}"
+
+echo "[NAV] container=${container_name} docker_script=${docker_script_path} robot_uid=${robot_uid} initial_pose_x=${initial_pose_x} initial_pose_y=${initial_pose_y} initial_pose_yaw=${initial_pose_yaw}"
+
 
 # Ensure docker is available and daemon is up
 if ! command -v docker >/dev/null 2>&1; then
@@ -32,9 +43,9 @@ fi
 # # No -t to avoid "the input device is not a TTY" under systemd
 # docker exec "$container_name" bash -lc '/root/cb.sh'
 
-echo "[NAV] exec ${docker_script_path} '${robot_uid}' in container..."
+echo "[NAV] exec ${docker_script_path} '${robot_uid}' ${initial_pose_x} ${initial_pose_y} ${initial_pose_yaw} in container..."
 # No -t to avoid "the input device is not a TTY" under systemd
-if ! docker exec ${container_name} bash -lc "exec ${docker_script_path} ${robot_uid}"; then
+if ! docker exec ${container_name} bash -lc "exec ${docker_script_path} ${robot_uid} ${initial_pose_x} ${initial_pose_y} ${initial_pose_yaw}"; then
   rc=$?
   echo "[ERR] docker exec failed with code $rc" >&2
   exit "$rc"

@@ -26,26 +26,12 @@ ___DEV_TEST_ROBOT_UID_ = "beast001"
 def get_robot_config():
 
     machine_id = ""
-
     robot_os = ""
     robot_chassis = ""
     robot_type = ""
     host_home_dir = ""
     robot_uid = ""
     ros2_container_name = ""
-
-    # if "raspberrypi" in os.uname().nodename.lower() or "raspberrypi" in os.uname().machine.lower():
-    #     robot_type = _CONST_CB_ROBOT_TYPE_UGV_RPI_
-    #     host_home_dir = _CONST_HOST_HOME_DIR_UGV_RPI_        
-    #     ros2_container_name = _CONST_ROS2_CONTAINER_UGV_RPI_
-    #     docker_script_filename = _CONST_DOCKER_BRINGUP_MAIN_SCRIPT_FILENAME_RPI_
-    # elif "tegra" in os.uname().nodename.lower() or "tegra" in os.uname().machine.lower():
-    #     robot_type = _CONST_CB_ROBOT_TYPE_UGV_JETSON
-    #     host_home_dir = _CONST_HOST_HOME_DIR_UGV_JETSON_
-    #     ros2_container_name = _CONST_ROS2_CONTAINER_UGV_JETSON_
-    #     docker_script_filename = _CONST_DOCKER_BRINGUP_MAIN_SCRIPT_FILENAME_JETSON_
-    # else:
-    #     raise Exception(f"Cannot determine robot type from uname: {os.uname()}")
 
     try:
         if os.path.exists("/home/jetson") and os.path.exists("/home/jetson/ugv_jetson"):
@@ -85,6 +71,7 @@ def get_robot_config():
         
         if robot_config is None:
             raise Exception(f"Cannot find robot config from any master server {_CB_MASTER_SERVER_HOSTNAMES_}")
+            return None
 
         print(f"[INFO] got robot_config for machine_id: {machine_id}")
         # write down to local file
@@ -96,7 +83,9 @@ def get_robot_config():
 
     except Exception as e:
         print(f"[ERROR] cannot determine robot config: {e}", file=sys.stderr)        
-        raise e
+        return None
+
+    return None
 
 
 def run_bash(script_name: str, params: list, script_dir: Path, debug=False) -> subprocess.Popen:
@@ -140,18 +129,30 @@ def check_docker(_try=30) -> bool:
     return False
 
 
-def main():
+def main(_get_config_max_retry = 30):  # 3 min retry
     # Base directory = folder containing this Python file
     # script_dir = Path(__file__).resolve().parent
     # If on Raspberry Pi, optionally change to /home/ws if your scripts live there
-    robot_config = get_robot_config()
+
+    robot_config = None
+    get_config_try = 0
+    while robot_config is None and get_config_try < _get_config_max_retry:
+        robot_config = get_robot_config()
+    
+    if robot_config is None:
+        print(f"[ERR] cannot get robot config after {_get_config_max_retry} tries; exiting.", file=sys.stderr)
+        return 1
 
     robot_type = robot_config.get("ROBOT_TYPE")
     host_home_dir = robot_config.get("HOST_HOME_DIR")
+    robot_maker_script_dir = robot_config.get("ROBOT_MAKER_SCRIPT_DIR")
     docker_home_dir = robot_config.get("DOCKER_HOME_DIR")
     ros2_container_name = robot_config.get("ROS2_CONTAINER_NAME")
     docker_script_filename = robot_config.get("DOCKER_BRINGUP_MAIN_SCRIPT_FILENAME")
     robot_uid = robot_config.get("ROBOT_UID")
+    initial_pose_x = str(float(robot_config.get("ROBOT_START_POSITION_AND_YAW", [0,0,0])[0])).format('.2f')
+    initial_pose_y = str(float(robot_config.get("ROBOT_START_POSITION_AND_YAW", [0,0,0])[1])).format('.2f')
+    initial_pose_yaw = str(float(robot_config.get("ROBOT_START_POSITION_AND_YAW", [0,0,0])[2])).format('.2f')
     
     print(f"[TYPE] robot_type={robot_type} host_home_dir={host_home_dir} ros2_container={ros2_container_name} robot_uid={robot_uid}")
 
@@ -199,11 +200,14 @@ def main():
     docker_params = [
         ros2_container_name,
         docker_script_path,
-        robot_uid
+        robot_uid,
+        initial_pose_x,
+        initial_pose_y,
+        initial_pose_yaw
     ]
 
     terminal_server_params = [
-        "/home/jetson/ugv_jetson"
+        robot_maker_script_dir
     ]
 
     
