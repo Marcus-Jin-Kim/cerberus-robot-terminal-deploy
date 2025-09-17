@@ -9,7 +9,7 @@ import urllib.request
 import yaml
 import json
 
-_CB_MASTER_SERVER_HOSTNAMES_ = ["192.168.137.1", "192.168.0.20"]
+_SKYNET_SERVER_HOSTNAMES_ = ["192.168.137.1", "192.168.0.20"]
 
 # _CONST_CB_ROBOT_TYPE_UGV_RPI_ = "UGV_RPI"
 # _CONST_CB_ROBOT_TYPE_UGV_JETSON =  "UGV_JETSON"
@@ -47,15 +47,15 @@ def get_robot_config():
             machine_id = f.read().strip()
 
         robot_config = None
-        for hostname in _CB_MASTER_SERVER_HOSTNAMES_:
-            
+        for hostname in _SKYNET_SERVER_HOSTNAMES_:
+
             try:
                 query = urllib.parse.urlencode({
                     "robot-os": robot_os or "",
                     "robot-chassis": robot_chassis or ""
                 })
                 mid_q = urllib.parse.quote(machine_id, safe="")
-                url = f"http://{hostname}:8000/get-robot-config/{mid_q}?{query}"
+                url = f"http://{hostname}:8000/get-robot-config-mid/{mid_q}?{query}"
                 print(f"[QUERY] {url}")
                 with urllib.request.urlopen(url, timeout=5) as response:
                     if response.status == 200:
@@ -70,7 +70,7 @@ def get_robot_config():
                 continue
         
         if robot_config is None:
-            raise Exception(f"Cannot find robot config from any master server {_CB_MASTER_SERVER_HOSTNAMES_}")
+            raise Exception(f"Cannot find robot config from any master server {_SKYNET_SERVER_HOSTNAMES_}")
             return None
 
         print(f"[INFO] got robot_config for machine_id: {machine_id}")
