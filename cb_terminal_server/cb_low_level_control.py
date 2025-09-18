@@ -13,8 +13,15 @@ class CBLowLevelControl():
 
     def __init__(self, config):
         self.config = config
-        self.base_control_low = BaseController(config["LOW_LEVEL_CONTROL_SERIAL_PORT"], config["LOW_LEVEL_CONTROL_BAUD_RATE"])
-        self.base_control_low.send_command({"T": 900, "main": 3, "module": 2}) # UGV Beast PI5
+        self.has_base_control_low_initialized = False
+        try:
+            self.base_control_low = BaseController(config["LOW_LEVEL_CONTROL_SERIAL_PORT"], config["LOW_LEVEL_CONTROL_BAUD_RATE"])
+            self.base_control_low.send_command({"T": 900, "main": 3, "module": 2}) # UGV Beast PI5
+            self.has_base_control_low_initialized = True
+
+        except Exception as e:
+            print(f"[CB] Error initializing low level control: {e}")
+            self.has_base_control_low_initialized = False
 
     def send_command(self, command):
         self.base_control_low.send_command(command)
