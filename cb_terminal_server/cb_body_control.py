@@ -14,27 +14,29 @@ class CBBodyControl():
         self.default_turn_speed = self.config["BODY_DEFAULT_TURN_SPEED"]
         self.default_duration = self.config["BODY_DEFAULT_MOVE_DURATION"] # 0.5  # Default duration in seconds
 
-    def forward(self, speed, duration):
+    def forward(self, vspeed, duration):
 
-        if speed <= 0:
-            speed = self.default_linear_speed
-        if duration <= 0:
+        if vspeed <= 0:
+            vspeed = self.default_linear_speed
+        # duration 0 means continuous until stop is called
+        if duration < 0:
             duration = self.default_duration
 
-        self.base.send_command({"T": 1, "L": speed, "R": speed})
+        self.base.send_command({"T": 1, "L": vspeed, "R": vspeed})
 
         if (duration > 0):
             # Wait for the specified duration
             time.sleep(duration)
             self.base.send_command({"T": 1, "L": 0, "R": 0})
         
-    def back(self, speed, duration):
-        if speed <= 0:
-            speed = self.default_linear_speed
-        if duration <= 0:
+    def back(self, vspeed, duration):
+        if vspeed <= 0:
+            vspeed = self.default_linear_speed
+        # duration 0 means continuous until stop is called
+        if duration < 0:
             duration = self.default_duration
 
-        self.base.send_command({"T": 1, "L": -speed, "R": -speed})
+        self.base.send_command({"T": 1, "L": -vspeed, "R": -vspeed})
 
         if (duration > 0):
             # Wait for the specified duration
@@ -65,26 +67,24 @@ class CBBodyControl():
         # UGV beast cannot move right, so we will just stop the left wheel
         self.stop()
 
-    def turnleft(self, speed, duration):
-        if speed <= 0:
-            speed = self.default_turn_speed
-        if duration <= 0:
+    def turnleft(self, vspeed, aspeed, duration):
+        # duration 0 means continuous until stop is called
+        if duration < 0:
             duration = self.default_duration
 
-        self.base.send_command({"T": 1, "L": -speed, "R": speed})
+        self.base.send_command({"T": 1, "L": vspeed-aspeed, "R": vspeed+aspeed})
 
         if (duration > 0):
             # Wait for the specified duration
             time.sleep(duration)
             self.base.send_command({"T": 1, "L": 0, "R": 0})
     
-    def turnright(self, speed, duration):
-        if speed <= 0:
-            speed = self.default_turn_speed
-        if duration <= 0:
+    def turnright(self, vspeed, aspeed, duration):
+        # duration 0 means continuous until stop is called
+        if duration < 0:
             duration = self.default_duration
 
-        self.base.send_command({"T": 1, "L": speed, "R": -speed})
+        self.base.send_command({"T": 1, "L": vspeed+aspeed, "R": vspeed-aspeed})
 
         if (duration > 0):
             # Wait for the specified duration

@@ -34,17 +34,17 @@ def create_routes_blueprint(robot_control_server:CerberusRobotTerminalServer):
 
     @bp.route('/forward', methods = ['GET', 'POST'])
     def forward():    
-        speed = request.args.get('speed', default=0, type=float)
-        duration = request.args.get('duration', default=0, type=float)
-        _bc.forward(speed=speed, duration= duration)    
+        vspeed = request.args.get('vspeed', default=0, type=float)
+        duration = request.args.get('duration', default=-1, type=float) # -1 means default duration, 0 means continous
+        _bc.forward(vspeed=vspeed, duration= duration)    
         return jsonify({"OK": True}),200
 
         
     @bp.route('/back', methods = ['GET', 'POST'])
     def backward():
-        speed = request.args.get('speed', default=0, type=float)    
-        duration = request.args.get('duration', default=0, type=float)
-        _bc.back(speed=speed, duration=duration)
+        vspeed = request.args.get('vspeed', default=0, type=float)
+        duration = request.args.get('duration', default=-1, type=float) # -1 means default duration, 0 means continou
+        _bc.back(vspeed=vspeed, duration=duration)
         return jsonify({"OK": True}),200
 
     @bp.route('/stop', methods = ['GET', 'POST'])
@@ -56,31 +56,33 @@ def create_routes_blueprint(robot_control_server:CerberusRobotTerminalServer):
     @bp.route('/moveleft', methods = ['GET', 'POST'])
     def moveleft():
         speed = request.args.get('speed', default=0, type=float)
-        duration = request.args.get('duration', default=0, type=float)
+        duration = request.args.get('duration', default=-1, type=float) # -1 means default duration, 0 means continou
         _bc.moveleft(speed=speed, duration=duration)
         return jsonify({"OK": True}),200
 
     @bp.route('/moveright', methods = ['GET', 'POST'])
     def moveright():
         speed = request.args.get('speed', default=0, type=float)
-        duration = request.args.get('duration', default=0, type=float)
+        duration = request.args.get('duration', default=-1, type=float) # -1 means default duration, 0 means continou
         _bc.moveright(speed=speed, duration=duration)
         return jsonify({"OK": True}),200
 
         
     @bp.route('/turnleft', methods = ['GET', 'POST'])
     def turnleft():
-        speed = request.args.get('speed', default=0, type=float)
-        duration = request.args.get('duration', default=0, type=float)
-        _bc.turnleft(speed=speed, duration=duration)
+        vspeed = request.args.get('vspeed', default=0, type=float)
+        aspeed = request.args.get('aspeed', default=0, type=float)
+        duration = request.args.get('duration', default=-1, type=float) # -1 means default duration, 0 means continou
+        _bc.turnleft(vspeed=vspeed, aspeed=aspeed, duration=duration)
         return jsonify({"OK": True}),200
 
         
     @bp.route('/turnright', methods = ['GET', 'POST'])
     def turnright():
-        speed = request.args.get('speed', default=0, type=float)
-        duration = request.args.get('duration', default=0, type=float)
-        _bc.turnright(speed=speed, duration=duration)
+        vspeed = request.args.get('vspeed', default=0, type=float)
+        aspeed = request.args.get('aspeed', default=0, type=float)
+        duration = request.args.get('duration', default=-1, type=float) # -1 means default duration, 0 means continou
+        _bc.turnright(vspeed=vspeed, aspeed=aspeed, duration=duration)
         return jsonify({"OK": True}),200
 
 
