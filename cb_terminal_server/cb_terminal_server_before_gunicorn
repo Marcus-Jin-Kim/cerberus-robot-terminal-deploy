@@ -9,9 +9,9 @@ from urllib.parse import parse_qs
 
 # Flask for MJPEG stream
 from flask import Flask, Response, jsonify
-from flask_socketio import SocketIO, emit
+
 import traceback
-from cb_cmd_routes import create_routes_blueprint
+
 
 class CerberusRobotTerminalServer:
 
@@ -42,12 +42,15 @@ class CerberusRobotTerminalServer:
         )
 
         # Shared state
-        # self._lock = threading.Lock() # lets remove lock for now for testing
+        self._lock = threading.Lock()
         self.last_json: Optional[dict] = None     # JSON-safe pose data (no bytes)
         self.last_jpeg: Optional[bytes] = None    # latest JPEG bytes
         self.last_ts: float = 0.0
 
-
+        # Flask app        
+        from cb_cmd_routes import create_routes_blueprint
+        self.app = Flask(__name__)
+        self.app.register_blueprint(create_routes_blueprint(self))
         # self._setup_routes()
 
         print(f"[SERV] UDP on {self.host}:{self.udp_port}, HTTP MJPEG on {self.host}:{self.http_port}")
@@ -145,84 +148,12 @@ class CerberusRobotTerminalServer:
                 except Exception as e:
                     print(f"[UDP] send error: {e}")
 
-    # def start_old(self, run_robot_control_loop=True, run_udp_loop=True):
-    #     # Threads: robot_control + UDP; Flask runs in main thread
-    #     if run_robot_control_loop:
-    #         threading.Thread(target=self._robot_control_loop, daemon=True).start()
-    #     if run_udp_loop:
-    #         threading.Thread(target=self._udp_loop, daemon=True).start()
-    #     # Blocking HTTP server (no reloader so threads are preserved)
-    #     self.app.run(host=self.host, port=self.http_port, threaded=True, use_reloader=False, debug=False)
-
-    # def start(self):
-    #     app.run(host=self.host, port=self.http_port, threaded=True, use_reloader=False, debug=False)
-        # this is main loop from app. it doesn use flask
-        #     if __name__ == "__main__":
-        # # lights off
-        # base.lights_ctrl(255, 255)
-        
-        # # play a audio file in /sounds/robot_started/
-        # audio_ctrl.play_random_audio("robot_started", False)
-
-        # # update the size of videos and pictures
-        # si.update_folder(thisPath)
-
-        # # pt/arm looks forward
-        # if f['base_config']['module_type'] == 1:
-        #     base.base_json_ctrl({"T":f['cmd_config']['cmd_arm_ctrl_ui'],"E":f['args_config']['arm_default_e'],"Z":f['args_config']['arm_default_z'],"R":f['args_config']['arm_default_r']})
-        # else:
-        #     base.gimbal_ctrl(0, 0, 200, 10)
-
-        # # feedback loop starts
-        # si.start()
-        # si.resume()
-        # data_update_thread = threading.Thread(target=update_data_loop, daemon=True)
-        # data_update_thread.start()
-
-        # # base data update
-        # base_update_thread = threading.Thread(target=base_data_loop, daemon=True)
-        # base_update_thread.start()
-
-        # # lights off
-        # base.lights_ctrl(0, 0)
-        # cmd_on_boot()
-
-        # # run the main web app
-        # socketio.run(app, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
-
-
-        # following app.py
-        # base.lights_ctrl(255, 255)
-        
-        # # play a audio file in /sounds/robot_started/
-        # audio_ctrl.play_random_audio("robot_started", False)
-
-        # # update the size of videos and pictures
-        # si.update_folder(thisPath)
-
-        # # pt/arm looks forward
-        # if f['base_config']['module_type'] == 1:
-        #     base.base_json_ctrl({"T":f['cmd_config']['cmd_arm_ctrl_ui'],"E":f['args_config']['arm_default_e'],"Z":f['args_config']['arm_default_z'],"R":f['args_config']['arm_default_r']})
-        # else:
-        #     base.gimbal_ctrl(0, 0, 200, 10)
-
-        # # feedback loop starts
-        # si.start()
-        # si.resume()
-        # data_update_thread = threading.Thread(target=update_data_loop, daemon=True)
-        # data_update_thread.start()
-
-        # # base data update
-        # base_update_thread = threading.Thread(target=base_data_loop, daemon=True)
-        # base_update_thread.start()
-
-        # # lights off
-        # base.lights_ctrl(0, 0)
-        # cmd_on_boot()
-
-        # # run the main web app
-        # socketio.run(app, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
-
+    def start(self):
+        # Threads: robot_control + UDP; Flask runs in main thread
+        threading.Thread(target=self._robot_control_loop, daemon=True).start()
+        threading.Thread(target=self._udp_loop, daemon=True).start()
+        # Blocking HTTP server (no reloader so threads are preserved)
+        self.app.run(host=self.host, port=self.http_port, threaded=True, use_reloader=False, debug=False)
 
         
     def _load_config(self, config_file):
@@ -235,11 +166,6 @@ class CerberusRobotTerminalServer:
             print(f"[SERV] Error loading config: {e}")
             return {}
         pass
-
-
-
-app = Flask(__name__)
-socketio = SocketIO(app)
 
 if __name__ == "__main__":
     # write down pid
@@ -261,43 +187,14 @@ if __name__ == "__main__":
     signal.signal(signal.SIGTERM, _on_signal)
     signal.signal(signal.SIGINT, _on_signal)
 
-    def cmd_on_boot(server: CerberusRobotTerminalServer):
-        with open('/home/ws/ugv_rpi' + '/config.yaml', 'r') as yaml_file:
-            f = yaml.safe_load(yaml_file)
-        cmd_list = [
-            {"T":142,"cmd":50},   # set feedback interval
-            # {"T":131,"cmd":1},    # serial feedback flow on:
-            {"T":131,"cmd":0},    # default is on. im turning off # https://www.waveshare.com/wiki/UGV02
-            {"T":143,"cmd":0},    # serial echo off ## MAYBE THIS IS IMPORTANT?
-            {"T":4,"cmd":f['base_config']['module_type']}, # select the module - 0:None 1:RoArm-M2-S 2:Gimbal
-            {"T":300,"mode":0,"mac":"EF:EF:EF:EF:EF:EF"},  # the base won't be ctrl by esp-now broadcast cmd, but it can still recv broadcast megs.
-
-            # 'send -a -b'    # add broadcast mac addr to peer
-            # 'base -c {"T":142,"cmd":50}',   # set feedback interval
-            # 'base -c {"T":131,"cmd":1}',    # serial feedback flow on
-            # 'base -c {"T":143,"cmd":0}',    # serial echo off
-            # 'base -c {{"T":4,"cmd":{}}}'.format(f['base_config']['module_type']),      # select the module - 0:None 1:RoArm-M2-S 2:Gimbal
-            # 'base -c {"T":300,"mode":0,"mac":"EF:EF:EF:EF:EF:EF"}',  # the base won't be ctrl by esp-now broadcast cmd, but it can still recv broadcast megs.
-            # 'send -a -b'    # add broadcast mac addr to peer
-        ]
-        print('{{"T":4,"cmd":{}}}'.format(f['base_config']['module_type']))
-        for i in range(0, len(cmd_list)):
-            server.robot_control.low_level_control.base_control_low.send_command(cmd_list[i])
-            # cvf.info_update(cmd_list[i], (0,255,255), 0.36)
-        # set_version(f['base_config']['main_type'], f['base_config']['module_type'])
 
     # One backend instance shared across UDP and Flask
     server = CerberusRobotTerminalServer(
         # host="0.0.0.0", udp_port=5001, http_port=5100,
         # return_image=True, control_turret=True, auto_aim=True
     )
-    app.register_blueprint(create_routes_blueprint(server))
-
     try:
-        # app.run(host=server.host, port=server.http_port, threaded=True, use_reloader=False, debug=False)
-        server.robot_control.low_level_control.base_control_low.lights_ctrl(0, 0)
-        cmd_on_boot(server)
-        socketio.run(app, host='0.0.0.0', port=server.http_port, allow_unsafe_werkzeug=True)
+        server.start()
     finally:
         _cleanup_pidfile()
         print("[SERV] Server stopped.")

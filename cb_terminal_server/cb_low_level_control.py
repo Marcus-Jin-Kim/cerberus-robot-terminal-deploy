@@ -16,7 +16,10 @@ class CBLowLevelControl():
         self.has_base_control_low_initialized = False
         try:
             self.base_control_low = BaseController(config["LOW_LEVEL_CONTROL_SERIAL_PORT"], config["LOW_LEVEL_CONTROL_BAUD_RATE"])
-            self.base_control_low.send_command({"T": 900, "main": 3, "module": 2}) # UGV Beast PI5
+            # maybe this makes it slow?
+            # app.py does this differently.. for now put them in cb_terminal_server.py
+            # TODO: get the initialization from app.py here
+            # self.base_control_low.send_command({"T": 900, "main": 3, "module": 2}) # UGV Beast PI5
             self.has_base_control_low_initialized = True
 
         except Exception as e:
@@ -26,11 +29,11 @@ class CBLowLevelControl():
     def send_command(self, command):
         self.base_control_low.send_command(command)
 
-    def move_forward(self, speed, duration):
-        self.base_control_low.send_command({"T": 1, "L": speed, "R": speed})
-        if duration > 0:
-            time.sleep(duration) # FIXME: blocks the whole robot
-            self.base_control_low.send_command({"T": 1, "L": 0, "R": 0})
+    # def move_forward(self, speed, duration):
+    #     self.base_control_low.send_command({"T": 1, "L": speed, "R": speed})
+    #     if duration > 0:
+    #         time.sleep(duration) # FIXME: blocks the whole robot
+    #         self.base_control_low.send_command({"T": 1, "L": 0, "R": 0})
 
     def set_turret_pan_tilt(self, pan, tilt):
         pass

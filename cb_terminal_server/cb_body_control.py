@@ -129,8 +129,7 @@ class CBBodyControl():
         else:
             self.base.send_command({"T": 1, 
                                     "L": self.default_linear_speed_cruise - self.default_turn_speed, 
-                                    "R": self.default_linear_speed_cruise + self.default_turn_speed})
-            
+                                    "R": self.default_linear_speed_cruise + self.default_turn_speed})            
 
         if (duration > 0):
             # Wait for the specified duration
