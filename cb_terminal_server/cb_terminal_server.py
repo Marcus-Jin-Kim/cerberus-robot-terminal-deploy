@@ -99,11 +99,10 @@ class CerberusRobotTerminalServer:
                     clean["data"] = d
 
             # Minimal critical section
-            with self._lock:
-                self.last_jpeg = jpeg           # may be None if not returning image
-                self.last_json = clean
-                self.last_ts = time.time()
-
+            #with self._lock: # disable lock for now
+            self.last_jpeg = jpeg           # may be None if not returning image
+            self.last_json = clean
+            self.last_ts = time.time()
 
             dt = time.time() - t0
             if dt < wait_for_second:
@@ -294,6 +293,10 @@ if __name__ == "__main__":
     app.register_blueprint(create_routes_blueprint(server))
 
     try:
+        # Threads: robot_control + UDP; Flask runs in main thread
+        threading.Thread(target=server._robot_control_loop, daemon=True).start()
+        threading.Thread(target=server._udp_loop, daemon=True).start()
+
         # app.run(host=server.host, port=server.http_port, threaded=True, use_reloader=False, debug=False)
         server.robot_control.low_level_control.base_control_low.lights_ctrl(0, 0)
         cmd_on_boot(server)
