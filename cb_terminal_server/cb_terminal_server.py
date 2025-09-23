@@ -265,8 +265,10 @@ if __name__ == "__main__":
             f = yaml.safe_load(yaml_file)
         cmd_list = [
             {"T":142,"cmd":50},   # set feedback interval
-            # {"T":131,"cmd":1},    # serial feedback flow on:
-            {"T":131,"cmd":0},    # default is on. im turning off # https://www.waveshare.com/wiki/UGV02
+            {"T":131,"cmd":1},    # serial feedback flow on:
+            #################
+            ## !!!! MUST BE ON TO GET FEEDBACK DATA AND UPDATE ROS POSITION TF AND EVERYTHING
+            ##################            #             
             {"T":143,"cmd":0},    # serial echo off ## MAYBE THIS IS IMPORTANT?
             {"T":4,"cmd":f['base_config']['module_type']}, # select the module - 0:None 1:RoArm-M2-S 2:Gimbal
             {"T":300,"mode":0,"mac":"EF:EF:EF:EF:EF:EF"},  # the base won't be ctrl by esp-now broadcast cmd, but it can still recv broadcast megs.
