@@ -260,32 +260,33 @@ if __name__ == "__main__":
     signal.signal(signal.SIGTERM, _on_signal)
     signal.signal(signal.SIGINT, _on_signal)
 
-    def cmd_on_boot(server: CerberusRobotTerminalServer):
-        with open('/home/ws/ugv_rpi' + '/config.yaml', 'r') as yaml_file:
-            f = yaml.safe_load(yaml_file)
-        cmd_list = [
-            {"T":142,"cmd":50},   # set feedback interval
-            {"T":131,"cmd":1},    # serial feedback flow on:
-            #################
-            ## !!!! MUST BE ON TO GET FEEDBACK DATA AND UPDATE ROS POSITION TF AND EVERYTHING
-            ##################            #             
-            {"T":143,"cmd":0},    # serial echo off ## MAYBE THIS IS IMPORTANT?
-            {"T":4,"cmd":f['base_config']['module_type']}, # select the module - 0:None 1:RoArm-M2-S 2:Gimbal
-            {"T":300,"mode":0,"mac":"EF:EF:EF:EF:EF:EF"},  # the base won't be ctrl by esp-now broadcast cmd, but it can still recv broadcast megs.
+    # def cmd_on_boot(server: CerberusRobotTerminalServer):
+    #     with open('/home/ws/ugv_rpi' + '/config.yaml', 'r') as yaml_file:
+    #         f = yaml.safe_load(yaml_file)
+    #     cmd_list = [
+    #         {"T":142,"cmd":50},   # set feedback interval
+    #         {"T":131,"cmd":1},    # serial feedback flow on:
+    #         #################
+    #         ## !!!! feedback flow MUST BE ON TO GET FEEDBACK DATA AND UPDATE ROS POSITION TF AND EVERYTHING
+    #         ##################
+    #         #             
+    #         {"T":143,"cmd":0},    # serial echo off ## MAYBE THIS IS IMPORTANT?
+    #         {"T":4,"cmd":f['base_config']['module_type']}, # select the module - 0:None 1:RoArm-M2-S 2:Gimbal
+    #         {"T":300,"mode":0,"mac":"EF:EF:EF:EF:EF:EF"},  # the base won't be ctrl by esp-now broadcast cmd, but it can still recv broadcast megs.
 
-            # 'send -a -b'    # add broadcast mac addr to peer
-            # 'base -c {"T":142,"cmd":50}',   # set feedback interval
-            # 'base -c {"T":131,"cmd":1}',    # serial feedback flow on
-            # 'base -c {"T":143,"cmd":0}',    # serial echo off
-            # 'base -c {{"T":4,"cmd":{}}}'.format(f['base_config']['module_type']),      # select the module - 0:None 1:RoArm-M2-S 2:Gimbal
-            # 'base -c {"T":300,"mode":0,"mac":"EF:EF:EF:EF:EF:EF"}',  # the base won't be ctrl by esp-now broadcast cmd, but it can still recv broadcast megs.
-            # 'send -a -b'    # add broadcast mac addr to peer
-        ]
-        print('{{"T":4,"cmd":{}}}'.format(f['base_config']['module_type']))
-        for i in range(0, len(cmd_list)):
-            server.robot_control.low_level_control.base_control_low.send_command(cmd_list[i])
-            # cvf.info_update(cmd_list[i], (0,255,255), 0.36)
-        # set_version(f['base_config']['main_type'], f['base_config']['module_type'])
+    #         # 'send -a -b'    # add broadcast mac addr to peer
+    #         # 'base -c {"T":142,"cmd":50}',   # set feedback interval
+    #         # 'base -c {"T":131,"cmd":1}',    # serial feedback flow on
+    #         # 'base -c {"T":143,"cmd":0}',    # serial echo off
+    #         # 'base -c {{"T":4,"cmd":{}}}'.format(f['base_config']['module_type']),      # select the module - 0:None 1:RoArm-M2-S 2:Gimbal
+    #         # 'base -c {"T":300,"mode":0,"mac":"EF:EF:EF:EF:EF:EF"}',  # the base won't be ctrl by esp-now broadcast cmd, but it can still recv broadcast megs.
+    #         # 'send -a -b'    # add broadcast mac addr to peer
+    #     ]
+    #     print('{{"T":4,"cmd":{}}}'.format(f['base_config']['module_type']))
+    #     for i in range(0, len(cmd_list)):
+    #         server.robot_control.low_level_control.base_control_low.send_command(cmd_list[i])
+    #         # cvf.info_update(cmd_list[i], (0,255,255), 0.36)
+    #     # set_version(f['base_config']['main_type'], f['base_config']['module_type'])
 
     # One backend instance shared across UDP and Flask
     server = CerberusRobotTerminalServer(
@@ -301,7 +302,7 @@ if __name__ == "__main__":
 
         # app.run(host=server.host, port=server.http_port, threaded=True, use_reloader=False, debug=False)
         server.robot_control.low_level_control.base_control_low.lights_ctrl(0, 0)
-        cmd_on_boot(server)
+        # cmd_on_boot(server)
         socketio.run(app, host='0.0.0.0', port=server.http_port, allow_unsafe_werkzeug=True)
     finally:
         _cleanup_pidfile()
