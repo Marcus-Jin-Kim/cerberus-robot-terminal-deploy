@@ -57,8 +57,8 @@ class CerberusRobotTerminalServer:
         period = 1.0 / max(1, self.stream_fps)
         while True:
             t0 = time.time()
-            with self._lock:
-                jpg = self.last_jpeg
+            # with self._lock:
+            jpg = self.last_jpeg
             if jpg:
                 yield (b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + jpg + b"\r\n")
             dt = time.time() - t0
