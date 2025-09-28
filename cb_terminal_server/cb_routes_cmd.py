@@ -9,29 +9,13 @@ if TYPE_CHECKING:
 ## MAX DURATION IS 3 sec
 # https://www.waveshare.com/wiki/08_Sub-controller_JSON_Command_Set#CMD_HEART_BEAT_SET
 
-def create_routes_blueprint(robot_control_server:"CerberusRobotTerminalServer"):
+def create_routes_blueprint_cmd(robot_control_server:"CerberusRobotTerminalServer"):
 
-    bp = Blueprint("cmd_routes", __name__)
+    bp = Blueprint("routes_cmd", __name__)
     _bc = robot_control_server.robot_control.body_control
     # _config = robot_control_server.robot_control.config
 
-    @bp.route("/")
-    def index():
-        if not robot_control_server.robot_control.low_level_control.has_base_control_low_initialized:
-            return jsonify({"OK": False, "error": "Low level control not initialized"}), 200            
-        else:
-            return jsonify({"OK": True, "msg": "Cerberus Robot Controller Terminal Server"}), 200
 
-    @bp.route('/admin/restart', methods = ['GET', 'POST'])
-    def admin_restart():
-        print(f"{os.getcwd()}")
-        os.chdir("..")
-        os.system("sudo python cb_restart_all.py &")
-        return jsonify({"OK": True}),200    
-    # @bp.route("/feedback")
-    # def feedback():
-    #     data = _bc.base.base_control_low.feedback_data()
-    #     return jsonify({"OK": True, "data": data}), 200
 
     @bp.route("/stream")
     def stream():
@@ -121,10 +105,5 @@ def create_routes_blueprint(robot_control_server:"CerberusRobotTerminalServer"):
         duration = request.args.get('duration', default=-1, type=float)
         _bc.pivotright(duration=duration)
         return jsonify({"OK": True}),200
-    
-    @bp.route('/t', methods = ['GET', 'POST'])
-    def t():
-        qsize = _bc.base.base_control_low.command_queue.qsize()   
-        return jsonify({"OK": True, "queue_size": qsize}),200
 
     return bp

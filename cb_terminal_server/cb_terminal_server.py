@@ -11,7 +11,9 @@ from urllib.parse import parse_qs
 from flask import Flask, Response, jsonify
 from flask_socketio import SocketIO, emit
 import traceback
-from cb_cmd_routes import create_routes_blueprint
+# from cb_cmd_routes import create_routes_blueprint
+from cb_routes_cmd import create_routes_blueprint_cmd
+from cb_routes_dev import create_routes_blueprint_dev
 
 class CerberusRobotTerminalServer:
 
@@ -144,86 +146,7 @@ class CerberusRobotTerminalServer:
                 except Exception as e:
                     print(f"[UDP] send error: {e}")
 
-    # def start_old(self, run_robot_control_loop=True, run_udp_loop=True):
-    #     # Threads: robot_control + UDP; Flask runs in main thread
-    #     if run_robot_control_loop:
-    #         threading.Thread(target=self._robot_control_loop, daemon=True).start()
-    #     if run_udp_loop:
-    #         threading.Thread(target=self._udp_loop, daemon=True).start()
-    #     # Blocking HTTP server (no reloader so threads are preserved)
-    #     self.app.run(host=self.host, port=self.http_port, threaded=True, use_reloader=False, debug=False)
 
-    # def start(self):
-    #     app.run(host=self.host, port=self.http_port, threaded=True, use_reloader=False, debug=False)
-        # this is main loop from app. it doesn use flask
-        #     if __name__ == "__main__":
-        # # lights off
-        # base.lights_ctrl(255, 255)
-        
-        # # play a audio file in /sounds/robot_started/
-        # audio_ctrl.play_random_audio("robot_started", False)
-
-        # # update the size of videos and pictures
-        # si.update_folder(thisPath)
-
-        # # pt/arm looks forward
-        # if f['base_config']['module_type'] == 1:
-        #     base.base_json_ctrl({"T":f['cmd_config']['cmd_arm_ctrl_ui'],"E":f['args_config']['arm_default_e'],"Z":f['args_config']['arm_default_z'],"R":f['args_config']['arm_default_r']})
-        # else:
-        #     base.gimbal_ctrl(0, 0, 200, 10)
-
-        # # feedback loop starts
-        # si.start()
-        # si.resume()
-        # data_update_thread = threading.Thread(target=update_data_loop, daemon=True)
-        # data_update_thread.start()
-
-        # # base data update
-        # base_update_thread = threading.Thread(target=base_data_loop, daemon=True)
-        # base_update_thread.start()
-
-        # # lights off
-        # base.lights_ctrl(0, 0)
-        # cmd_on_boot()
-
-        # # run the main web app
-        # socketio.run(app, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
-
-
-        # following app.py
-        # base.lights_ctrl(255, 255)
-        
-        # # play a audio file in /sounds/robot_started/
-        # audio_ctrl.play_random_audio("robot_started", False)
-
-        # # update the size of videos and pictures
-        # si.update_folder(thisPath)
-
-        # # pt/arm looks forward
-        # if f['base_config']['module_type'] == 1:
-        #     base.base_json_ctrl({"T":f['cmd_config']['cmd_arm_ctrl_ui'],"E":f['args_config']['arm_default_e'],"Z":f['args_config']['arm_default_z'],"R":f['args_config']['arm_default_r']})
-        # else:
-        #     base.gimbal_ctrl(0, 0, 200, 10)
-
-        # # feedback loop starts
-        # si.start()
-        # si.resume()
-        # data_update_thread = threading.Thread(target=update_data_loop, daemon=True)
-        # data_update_thread.start()
-
-        # # base data update
-        # base_update_thread = threading.Thread(target=base_data_loop, daemon=True)
-        # base_update_thread.start()
-
-        # # lights off
-        # base.lights_ctrl(0, 0)
-        # cmd_on_boot()
-
-        # # run the main web app
-        # socketio.run(app, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
-
-
-        
     def _load_config(self, config_file):
         try:
             with open(config_file, 'r') as f:
@@ -293,7 +216,9 @@ if __name__ == "__main__":
         # host="0.0.0.0", udp_port=5001, http_port=5100,
         # return_image=True, control_turret=True, auto_aim=True
     )
-    app.register_blueprint(create_routes_blueprint(server))
+    app.register_blueprint(create_routes_blueprint_dev(server))
+    app.register_blueprint(create_routes_blueprint_cmd(server))
+    
 
     try:
         # Threads: robot_control + UDP; Flask runs in main thread

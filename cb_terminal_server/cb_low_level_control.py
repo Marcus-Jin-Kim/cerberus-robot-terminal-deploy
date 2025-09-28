@@ -32,7 +32,7 @@ class CBLowLevelControl():
                 # f['base_config']['module_type']}) # select the module - 0:None 1:RoArm-M2-S 2:Gimbal
                 # 0 is hardcoded for ugv_rpi/config.yaml (from waveshare. wtf)
                 # https://www.waveshare.com/wiki/08_Sub-controller_JSON_Command_Set#CMD_MODULE_TYPE
-            self.base_control_low.send_command({"T":300,"mode":0,"mac":"EF:EF:EF:EF:EF:EF"})  # the base won't be ctrl by esp-now broadcast cmd, but it can still recv broadcast megs.
+            # self.base_control_low.send_command({"T":300,"mode":0,"mac":"EF:EF:EF:EF:EF:EF"})  # the base won't be ctrl by esp-now broadcast cmd, but it can still recv broadcast megs.
 
 
 

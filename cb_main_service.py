@@ -129,7 +129,7 @@ def check_docker(_try=30) -> bool:
     return False
 
 
-def main(_get_config_max_retry = 30):  # 3 min retry
+def main(_get_config_max_retry = 30, start_ros=True, start_terminal=True):  # 3 min retry
     # Base directory = folder containing this Python file
     # script_dir = Path(__file__).resolve().parent
     # If on Raspberry Pi, optionally change to /home/ws if your scripts live there
@@ -179,74 +179,97 @@ def main(_get_config_max_retry = 30):  # 3 min retry
     os.chdir(host_script_dir)
     print(f"[CWD] {os.getcwd()}")
     
+    if start_ros:
+        print("[DOCK] starting ros2 docker..")
+        print("[DOCK] checking docker service is running...")
+        if not check_docker():
+            print("[ERR] docker does not appear to be running; cannot continue.", file=sys.stderr)
+            return 1
+        
+        print(f"[DOCK] starting docker container {ros2_container_name}...")
+        time.sleep(5) # just give some time
+        r = os.system(f"docker start {ros2_container_name}")
+        if r != 0:
+            print(f"[ERR] failed to start docker container {ros2_container_name}", file=sys.stderr)
+            raise Exception(f"failed to start docker container {ros2_container_name}")
+        
+        time.sleep(5) # just give some time
 
-    print("[DOCK] checking docker service is running...")
-    if not check_docker():
-        print("[ERR] docker does not appear to be running; cannot continue.", file=sys.stderr)
-        return 1
+        print(f"[DOCK] starting subsystems...")
+
+        # build ros2 docker params
+        docker_params = [
+            ros2_container_name,
+            docker_script_path,
+            robot_uid,
+            initial_pose_x,
+            initial_pose_y,
+            initial_pose_yaw
+        ]
+
+        p1 = run_bash(f"cb_subsystem_ros2_nav.sh", docker_params, host_script_dir)
+        if p1 is None:        
+            print("[ERROR] failed to launch ros2_nav subsystem", file=sys.stderr)        
+            raise Exception("failed to launch ros2_nav subsystem")
+
+    if start_terminal:
+        # start terminal server
+        print(f"[TERM] starting terminal server...")
+         # build terminal server params
+        terminal_server_params = [
+            robot_maker_script_dir
+        ]    
+
+        # p2 = run_bash("ls", script_dir)  # replace with actual script
+        p2 = run_bash("cb_subsystem_terminal_server.sh", terminal_server_params, host_script_dir)
+
+
+        if p2 is None:
+            print("[ERROR] failed to launch terminal_server subsystem", file=sys.stderr)        
+            raise Exception("failed to launch terminal_server subsystem")
     
-    print(f"[DOCK] starting docker container {ros2_container_name}...")
-    time.sleep(5) # just give some time
-    r = os.system(f"docker start {ros2_container_name}")
-    if r != 0:
-        print(f"[ERR] failed to start docker container {ros2_container_name}", file=sys.stderr)
-        raise Exception(f"failed to start docker container {ros2_container_name}")
-    
-    time.sleep(5) # just give some time
-
-    print(f"[DOCK] starting subsystems...")
-
-    # build ros2 docker params
-    docker_params = [
-        ros2_container_name,
-        docker_script_path,
-        robot_uid,
-        initial_pose_x,
-        initial_pose_y,
-        initial_pose_yaw
-    ]
-
-    terminal_server_params = [
-        robot_maker_script_dir
-    ]
-
-    
-    p1 = run_bash(f"cb_subsystem_ros2_nav.sh", docker_params, host_script_dir)
-    # p2 = run_bash("ls", script_dir)  # replace with actual script
-    p2 = run_bash("cb_subsystem_terminal_server.sh", terminal_server_params, host_script_dir)
-
-    if p1 is None:        
-        print("[ERROR] failed to launch ros2_nav subsystem", file=sys.stderr)        
-        raise Exception("failed to launch ros2_nav subsystem")
-    if p2 is None:
-        print("[ERROR] failed to launch terminal_server subsystem", file=sys.stderr)        
-        raise Exception("failed to launch terminal_server subsystem")
-    
-    print(f"[INFO] launched subsystems, pids: {p1.pid}, {p2.pid}, waiting forever...")
-    try:
-        # i just want to keep this process alive, no need to wait on the subprocesses
-        while True:
-            time.sleep(10)
-    except KeyboardInterrupt:
-        print("[EXIT] KeyboardInterrupt received; exiting.")
-        pass
+    print(f"[INFO] launched subsystems. exiting main service")
+    # print(f"[INFO] launched subsystems, waiting forever...")
+    # try:
+    #     # i just want to keep this process alive, no need to wait on the subprocesses
+    #     while True:
+    #         time.sleep(10)
+    # except KeyboardInterrupt:
+    #     print("[EXIT] KeyboardInterrupt received; exiting.")
+    #     pass
 
 if __name__ == "__main__":
-    # write down pid and ensure cleanup
-    with open("cb_pid_main_service.txt", "w") as f:
-        f.write(str(os.getpid()) + "\n")
-        print(f"[SERV] wrote PID {os.getpid()} to cb_pid_main_service.txt")
+    ## main service no longer holds terminal
+    start_ros = True
+    start_terminal = True
+    arg = ""
+    if len(sys.argv) >= 2:
+        for arg in sys.argv[1:]:
+            if arg == "ros-only":
+                start_ros = True
+                start_terminal = False
+            elif arg == "terminal-only":
+                start_ros = False
+                start_terminal = True            
+            else:
+                print(f"[WARN] unknown argument '{arg}'; ignoring.", file=sys.stderr)
 
-    def _cleanup_pidfile():
-        if os.path.exists("cb_pid_main_service.txt"):
-            os.remove("cb_pid_main_service.txt")
-            print("[SERV] main service PID file removed.")
-    def _on_signal(signum, frame):
-        print(f"[SERV] signal {signum} received; exiting")
-        _cleanup_pidfile()
-        sys.exit(0)
-    atexit.register(_cleanup_pidfile)    
-    signal.signal(signal.SIGTERM, _on_signal)
-    signal.signal(signal.SIGINT, _on_signal)
+    print(f"[INFO] starting services: ROS={start_ros}, Terminal={start_terminal}")
+    main(start_ros=start_ros, start_terminal=start_terminal)
+    # # write down pid and ensure cleanup
+    # with open("cb_pid_main_service.txt", "w") as f:
+    #     f.write(str(os.getpid()) + "\n")
+    #     print(f"[SERV] wrote PID {os.getpid()} to cb_pid_main_service.txt")
 
-    main()
+    # def _cleanup_pidfile():
+    #     if os.path.exists("cb_pid_main_service.txt"):
+    #         os.remove("cb_pid_main_service.txt")
+    #         print("[SERV] main service PID file removed.")
+    # def _on_signal(signum, frame):
+    #     print(f"[SERV] signal {signum} received; exiting")
+    #     _cleanup_pidfile()
+    #     sys.exit(0)
+    # atexit.register(_cleanup_pidfile)    
+    # signal.signal(signal.SIGTERM, _on_signal)
+    # signal.signal(signal.SIGINT, _on_signal)
+
