@@ -160,6 +160,8 @@ class CBTurretControl: # this should be top level robot controller later
             # do i need lock here?
             with self._last_lock:
                 self.last_pose["pose_detected"] = True
+                self.last_pose["frame_w"] = w
+                self.last_pose["frame_h"] = h
                 self.last_pose["landmarks"] = []
                 for lm in results.pose_landmarks.landmark:
                     self.last_pose["landmarks"].append({

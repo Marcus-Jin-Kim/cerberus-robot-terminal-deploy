@@ -9,7 +9,7 @@ import urllib.request
 import yaml
 import json
 
-_SKYNET_SERVER_HOSTNAMES_ = ["192.168.137.1", "192.168.0.20"]
+_SKYNET_SERVER_HOSTNAMES_ = ["192.168.137.1", "192.168.0.20", "192.168.77.7"]
 
 # _CONST_CB_ROBOT_TYPE_UGV_RPI_ = "UGV_RPI"
 # _CONST_CB_ROBOT_TYPE_UGV_JETSON =  "UGV_JETSON"
@@ -27,6 +27,7 @@ def get_robot_config():
 
     machine_id = ""
     robot_os = ""
+
     robot_chassis = ""
     robot_type = ""
     host_home_dir = ""
@@ -36,10 +37,12 @@ def get_robot_config():
     try:
         if os.path.exists("/home/jetson") and os.path.exists("/home/jetson/ugv_jetson"):
             robot_os = "JETSON"
+
             ugv_config = yaml.safe_load(open("/home/jetson/ugv_jetson/config.yaml", 'r'))
             robot_chassis = ugv_config.get("base_config").get("robot_name")
         elif os.path.exists("/home/ws") and os.path.exists("/home/ws/ugv_rpi"):
             robot_os = "RPI"
+
             ugv_config = yaml.safe_load(open("/home/ws/ugv_rpi/config.yaml", 'r'))
             robot_chassis = ugv_config.get("base_config").get("robot_name")
 
@@ -75,9 +78,7 @@ def get_robot_config():
 
         print(f"[INFO] got robot_config for machine_id: {machine_id}")
         # write down to local file
-        with open("cb_config.yaml", "w") as f:
-            yaml.safe_dump(robot_config, f)
-        print(f"[INFO] wrote local config to ./cb_config.yaml")
+
         return robot_config
 
 
@@ -139,9 +140,38 @@ def main(_get_config_max_retry = 30, start_ros=True, start_terminal=True):  # 3 
     while robot_config is None and get_config_try < _get_config_max_retry:
         robot_config = get_robot_config()
     
+    
     if robot_config is None:
         print(f"[ERR] cannot get robot config after {_get_config_max_retry} tries; exiting.", file=sys.stderr)
         return 1
+        
+    # switch user to robot_os_user_id
+    robot_os_user_id = ""
+    if robot_config.get("ROBOT_OS") == "RPI":
+        robot_os_user_id = "ws"
+    elif robot_config.get("ROBOT_OS") == "JETSON":
+        robot_os_user_id = "jetson"
+    else:
+        print(f"[ERR] unknown ROBOT_OS {robot_config.get('ROBOT_OS')}; cannot switch user", file=sys.stderr)
+        return 1
+
+    # set uid is working but now i have permission problem
+    # try:
+    #     import pwd
+    #     user_info = pwd.getpwnam(robot_os_user_id)
+    #     os.setgid(user_info.pw_gid)
+    #     os.setuid(user_info.pw_uid)
+    #     os.environ['HOME'] = user_info.pw_dir
+    #     print(f"[USER] switched to user {robot_os_user_id}")
+    # except Exception as e:
+    #     print(f"[ERR] cannot switch to user {robot_os_user_id}: {e}", file=sys.stderr)
+    #     return 1
+    
+    # write down to local file
+    with open("cb_config.yaml", "w") as f:
+        yaml.safe_dump(robot_config, f)
+        print(f"[INFO] wrote local config to ./cb_config.yaml")
+
 
     robot_type = robot_config.get("ROBOT_TYPE")
     host_home_dir = robot_config.get("HOST_HOME_DIR")
@@ -160,6 +190,12 @@ def main(_get_config_max_retry = 30, start_ros=True, start_terminal=True):  # 3 
     host_script_dir = Path(f"{host_home_dir}/cb")
     docker_script_dir = Path(f"{docker_home_dir}/cb")
     docker_script_path = f"{docker_script_dir}/cb_docker_tools/{docker_script_filename}"
+
+
+
+
+
+
 
     # DIRTY HACK TO ENSURE SCRIPT IS EXECUTABLE
     os.chmod(f"{host_home_dir}/cb/cb_docker_tools/{docker_script_filename}", 0o755)

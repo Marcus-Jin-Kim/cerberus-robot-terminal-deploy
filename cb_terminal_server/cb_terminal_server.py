@@ -133,8 +133,7 @@ class CerberusRobotTerminalServer:
                 continue
 
             if req == "mp-pose":
-                with self._lock:
-                    reply = self.last_json if self.last_json is not None else {"OK": False, "error": "no_data"}
+                reply = self.last_json if self.last_json is not None else {"OK": False, "error": "no_data"}
                 try:
                     # just drop jpeg_image_bytes in data since udp sever doesnt serve it
                     if "data" in reply and isinstance(reply["data"], dict):

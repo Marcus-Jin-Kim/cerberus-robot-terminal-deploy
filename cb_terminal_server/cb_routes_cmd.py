@@ -34,12 +34,26 @@ def create_routes_blueprint_cmd(robot_control_server:"CerberusRobotTerminalServe
     
 
     # low level direct speed control, as cerberus (unity) does
-    @bp.route('/direct-speed-control', methods = ['GET', 'POST'])
-    def direct_speed_control():
+    @bp.route('/move-vsws', methods = ['GET', 'POST'])
+    def move_vsws():
         vspeed = request.args.get('vspeed', default=0, type=float)
         aspeed = request.args.get('aspeed', default=0, type=float)
         duration = request.args.get('duration', default=-1, type=float) # -1 means default duration, 0 means continuous        
         _bc.direct_speed_control(vspeed=vspeed, aspeed=aspeed, duration=duration)
+        return jsonify({"OK": True}),200
+    
+    
+    @bp.route('/move-vlwl', methods = ['GET', 'POST'])
+    def move_vlwl():
+        """ move with vertical and angular LEVEL """
+        vl = request.args.get('vl', default=0, type=float)
+        wl = request.args.get('wl', default=0, type=float)
+        duration = request.args.get('duration', default=-1, type=float) # -1 means default duration, 0 means continuous
+        #hardcode for now
+        # TODO: make it configurable by robot config
+        vs = vl * 0.33
+        ws = wl * 0.33
+        _bc.direct_speed_control(vspeed=vs, aspeed=ws, duration=duration)
         return jsonify({"OK": True}),200
 
 
