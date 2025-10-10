@@ -46,15 +46,27 @@ def create_routes_blueprint_cmd(robot_control_server:"CerberusRobotTerminalServe
     @bp.route('/move-vlwl', methods = ['GET', 'POST'])
     def move_vlwl():
         """ move with vertical and angular LEVEL """
-        vl = request.args.get('vl', default=0, type=float)
-        wl = request.args.get('wl', default=0, type=float)
+        vl = request.args.get('vl', default=0, type=int)
+        wl = request.args.get('wl', default=0, type=int)
         duration = request.args.get('duration', default=-1, type=float) # -1 means default duration, 0 means continuous
-        #hardcode for now
-        # TODO: make it configurable by robot config
-        vs = vl * 0.33
-        ws = wl * 0.33
+        vwd = _config_vlwl_to_dict()
+
+        vlm = 0 if (vl==0) else abs(vl)
+        wlm = 0 if (wl==0) else abs(wl)
+        vls = 0 if (vl==0) else vl / vlm
+        wls = 0 if (wl==0) else wl / wlm
+
+        vs = vwd["vl"][vlm] * vls
+        ws = vwd["wl"][wlm] * wls
         _bc.direct_speed_control(vspeed=vs, aspeed=ws, duration=duration)
         return jsonify({"OK": True}),200
+
+    def _config_vlwl_to_dict():
+        c = robot_control_server.config
+        return {
+            "vl": [c["BODY_VL_RATIO_L0"], c["BODY_VL_RATIO_L1"], c["BODY_VL_RATIO_L2"], c["BODY_VL_RATIO_L3"], c["BODY_VL_RATIO_L4"]],
+            "wl": [c["BODY_WL_RATIO_L0"], c["BODY_WL_RATIO_L1"], c["BODY_WL_RATIO_L2"], c["BODY_WL_RATIO_L3"], c["BODY_WL_RATIO_L4"]],
+        }
 
 
     # wrapper routes for general body control
