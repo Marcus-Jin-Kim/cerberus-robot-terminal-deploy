@@ -12,7 +12,7 @@ class CBBodyControl():
         self.default_linear_speed_cruise = self.config["BODY_DEFAULT_LINEAR_SPEED_CRUISE"]
         self.default_linear_speed_fast = self.config["BODY_DEFAULT_LINEAR_SPEED_FAST"]
         self.default_turn_speed = self.config["BODY_DEFAULT_TURN_SPEED"]        
-        self.default_duration = self.config["BODY_DEFAULT_MOVE_DURATION"] # 0.5  # Default duration in seconds
+        # self.default_duration = self.config["BODY_DEFAULT_MOVE_DURATION"] # 0.5  # Default duration in seconds
         # 
         # CMD_HEART_BEAT_SET
         # {"T":136,"cmd":3000}
@@ -34,9 +34,10 @@ class CBBodyControl():
 
 
     def direct_speed_control(self, vspeed, aspeed, duration):
-        # duration 0 means continuous until stop is called
-        if duration < 0:
-            duration = self.default_duration
+        # default duration is controlled by Unity, not here (we have heartbeat anyway)
+        # # duration 0 means continuous until stop is called
+        # if duration < 0:
+        #     duration = self.default_duration
 
         self.base.send_command({"T": 1, "L": vspeed+aspeed, "R": vspeed-aspeed})
 
@@ -47,8 +48,10 @@ class CBBodyControl():
 
 
     def forward_slow(self, duration):
-        if duration < 0:
-            duration = self.default_duration
+        # default duration is controlled by Unity, not here (we have heartbeat anyway)
+        # # duration 0 means continuous until stop is called
+        # if duration < 0:
+        #     duration = self.default_duration
 
         self.base.send_command({"T": 1, "L": self.default_linear_speed_slow, 
                                 "R": self.default_linear_speed_slow})
@@ -59,8 +62,10 @@ class CBBodyControl():
             self.stop()
 
     def forward_cruise(self, duration):
-        if duration < 0:
-            duration = self.default_duration
+        # default duration is controlled by Unity, not here (we have heartbeat anyway)
+        # # duration 0 means continuous until stop is called
+        # if duration < 0:
+        #     duration = self.default_duration
 
         self.base.send_command({"T": 1, "L": self.default_linear_speed_cruise, 
                                 "R": self.default_linear_speed_cruise})
@@ -71,8 +76,10 @@ class CBBodyControl():
             self.stop()
     
     def forward_fast(self, duration):
-        if duration < 0:
-            duration = self.default_duration
+        # default duration is controlled by Unity, not here (we have heartbeat anyway)
+        # # duration 0 means continuous until stop is called
+        # if duration < 0:
+        #     duration = self.default_duration
 
         self.base.send_command({"T": 1, "L": self.default_linear_speed_fast, 
                                 "R": self.default_linear_speed_fast})
@@ -83,8 +90,10 @@ class CBBodyControl():
             self.stop()
     
     def back_slow(self, duration):
-        if duration < 0:
-            duration = self.default_duration
+        # default duration is controlled by Unity, not here (we have heartbeat anyway)
+        # # duration 0 means continuous until stop is called
+        # if duration < 0:
+        #     duration = self.default_duration
 
         self.base.send_command({"T": 1, "L": -self.default_linear_speed_slow, 
                                 "R": -self.default_linear_speed_slow})
@@ -95,8 +104,10 @@ class CBBodyControl():
             self.stop()
 
     def back_cruise(self, duration):
-        if duration < 0:
-            duration = self.default_duration
+        # default duration is controlled by Unity, not here (we have heartbeat anyway)
+        # # duration 0 means continuous until stop is called
+        # if duration < 0:
+        #     duration = self.default_duration
 
         self.base.send_command({"T": 1, "L": -self.default_linear_speed_cruise, 
                                 "R": -self.default_linear_speed_cruise})
@@ -107,8 +118,10 @@ class CBBodyControl():
             self.stop()
     
     def back_fast(self, duration):
-        if duration < 0:
-            duration = self.default_duration
+        # default duration is controlled by Unity, not here (we have heartbeat anyway)
+        # # duration 0 means continuous until stop is called
+        # if duration < 0:
+        #     duration = self.default_duration
 
         self.base.send_command({"T": 1, "L": -self.default_linear_speed_fast, 
                                 "R": -self.default_linear_speed_fast})
@@ -119,8 +132,10 @@ class CBBodyControl():
             self.stop()
 
     def turnleft(self, duration, reverse=False):
-        if duration < 0:
-            duration = self.default_duration
+        # default duration is controlled by Unity, not here (we have heartbeat anyway)
+        # # duration 0 means continuous until stop is called
+        # if duration < 0:
+        #     duration = self.default_duration
 
         if reverse:
             self.base.send_command({"T": 1, 
@@ -137,8 +152,10 @@ class CBBodyControl():
             self.stop()
 
     def turnright(self, duration, reverse=False):
-        if duration < 0:
-            duration = self.default_duration
+        # default duration is controlled by Unity, not here (we have heartbeat anyway)
+        # # duration 0 means continuous until stop is called
+        # if duration < 0:
+        #     duration = self.default_duration
 
         if reverse:
             self.base.send_command({"T": 1, 
@@ -156,8 +173,10 @@ class CBBodyControl():
 
 
     def pivotleft(self, duration):
-        if duration < 0:
-            duration = self.default_duration
+        # default duration is controlled by Unity, not here (we have heartbeat anyway)
+        # # duration 0 means continuous until stop is called
+        # if duration < 0:
+        #     duration = self.default_duration
 
         self.base.send_command({"T": 1, 
                                 "L": -self.default_turn_speed, 
@@ -169,8 +188,10 @@ class CBBodyControl():
             self.stop()
 
     def pivotright(self, duration):
-        if duration < 0:
-            duration = self.default_duration
+        # default duration is controlled by Unity, not here (we have heartbeat anyway)
+        # # duration 0 means continuous until stop is called
+        # if duration < 0:
+        #     duration = self.default_duration
 
         self.base.send_command({"T": 1, 
                                 "L": self.default_turn_speed, 
