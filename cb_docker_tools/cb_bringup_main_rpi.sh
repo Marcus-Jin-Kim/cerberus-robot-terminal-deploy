@@ -1,7 +1,7 @@
 #!/bin/bash
 export UGV_MODEL=ugv_beast # this is only reason for different from rpi script
 export LDLIDAR_MODEL=ld19
-export ROS_DOMAIN_ID=33
+# export ROS_DOMAIN_ID=33
 
 
 ROBOT_UID="$1"
