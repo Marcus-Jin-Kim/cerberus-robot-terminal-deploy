@@ -1,22 +1,28 @@
 #!/bin/bash
 export UGV_MODEL=ugv_rover # this is only reason for different from rpi script
 export LDLIDAR_MODEL=ld19
-# export ROS_DOMAIN_ID=33
-
 
 ROBOT_UID="$1"
 if [ -z "$ROBOT_UID" ]; then
-  echo "[ERR] usage: $0 <robot_uid> [<initial_pose_x> <initial_pose_y> <initial_pose_yaw>]" >&2
+  echo "[ERR] usage: $0 <robot_uid> <robot_domain_id> [<initial_pose_x> <initial_pose_y> <initial_pose_yaw>]" >&2
   exit 1
 fi
+
+ROBOT_ROS_DOMAIN_ID="$2"
+if [ -z "$ROBOT_ROS_DOMAIN_ID" ]; then
+  echo "[ERR] usage: $0 <robot_uid> <robot_domain_id> [<initial_pose_x> <initial_pose_y> <initial_pose_yaw>]" >&2
+  exit 1
+fi
+
+export ROS_DOMAIN_ID=$ROBOT_ROS_DOMAIN_ID
 
 # export ROBOT_UID="$ROBOT_UID"
 INITIAL_POSE_X=0.0
 INITIAL_POSE_Y=0.0
 INITIAL_POSE_YAW=0.0
 
-# if has 4 parameters, means initial pose is provided
-if [ "$#" -eq 4 ]; then
+# if has 5 parameters, means initial pose is provided
+if [ "$#" -eq 5 ]; then
   INITIAL_POSE_X="$2"
   INITIAL_POSE_Y="$3"
   INITIAL_POSE_YAW="$4"
@@ -25,6 +31,7 @@ if [ "$#" -eq 4 ]; then
   # export INITIAL_POSE_Y="$INITIAL_POSE_Y"
   # export INITIAL_POSE_YAW="$INITIAL_POSE_YAW"
 fi
+
 
 source /opt/ros/humble/setup.bash
 source /home/ws/ugv_ws/install/setup.bash
