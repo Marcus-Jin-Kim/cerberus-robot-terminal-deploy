@@ -211,7 +211,8 @@ def main(_get_config_max_retry = 30, start_ros=True, start_terminal=True):  # 3 
     docker_script_dir = Path(f"{docker_home_dir}/cb")
     docker_script_path = f"{docker_script_dir}/cb_docker_tools/{docker_script_filename}"
 
-    robot_domain_id = str(robot_config.get("ROBOT_DOMAIN_ID"))
+    robot_domain_id = robot_config.get("ROBOT_DOMAIN_ID")
+
     with open("cb_domain_bridge_config.yaml", "w") as f:
         domain_bridge_config = generate_domain_bridge_config(robot_uid, robot_domain_id)
         yaml.safe_dump(domain_bridge_config, f)
@@ -258,7 +259,7 @@ def main(_get_config_max_retry = 30, start_ros=True, start_terminal=True):  # 3 
             ros2_container_name,
             docker_script_path,
             robot_uid,
-            robot_domain_id,
+            str(robot_domain_id),
             initial_pose_x,
             initial_pose_y,
             initial_pose_yaw
