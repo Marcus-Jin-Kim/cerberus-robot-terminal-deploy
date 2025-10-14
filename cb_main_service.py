@@ -40,6 +40,7 @@ def get_robot_config():
 
             ugv_config = yaml.safe_load(open("/home/jetson/ugv_jetson/config.yaml", 'r'))
             robot_chassis = ugv_config.get("base_config").get("robot_name")
+
         elif os.path.exists("/home/ws") and os.path.exists("/home/ws/ugv_rpi"):
             robot_os = "RPI"
 
@@ -87,6 +88,25 @@ def get_robot_config():
         return None
 
     return None
+
+def generate_domain_bridge_config(robot_uid, robot_domain_id):
+    domain_bridge_config = {
+        "from_domain": robot_domain_id,
+        "to_domain": 0,
+        "topics": {
+            "tf": {
+                "type": "tf2_msgs/msg/TFMessage",
+                "remap": f"{robot_uid}/tf"
+            },
+            "tf_static": {
+                "type": "tf2_msgs/msg/TFMessage",
+                "remap": f"{robot_uid}/tf_static"
+            }
+        }
+    }
+
+    return domain_bridge_config
+    
 
 
 def run_bash(script_name: str, params: list, script_dir: Path, debug=False) -> subprocess.Popen:
@@ -191,11 +211,11 @@ def main(_get_config_max_retry = 30, start_ros=True, start_terminal=True):  # 3 
     docker_script_dir = Path(f"{docker_home_dir}/cb")
     docker_script_path = f"{docker_script_dir}/cb_docker_tools/{docker_script_filename}"
 
-
-
-
-
-
+    robot_domain_id = str(robot_config.get("ROBOT_DOMAIN_ID"))
+    with open("cb_domain_bridge_config.yaml", "w") as f:
+        domain_bridge_config = generate_domain_bridge_config(robot_uid, robot_domain_id)
+        yaml.safe_dump(domain_bridge_config, f)
+        print(f"[INFO] wrote domain bridge config to ./cb_domain_bridge_config.yaml")
 
     # DIRTY HACK TO ENSURE SCRIPT IS EXECUTABLE
     os.chmod(f"{host_home_dir}/cb/cb_docker_tools/{docker_script_filename}", 0o755)
@@ -238,6 +258,7 @@ def main(_get_config_max_retry = 30, start_ros=True, start_terminal=True):  # 3 
             ros2_container_name,
             docker_script_path,
             robot_uid,
+            robot_domain_id,
             initial_pose_x,
             initial_pose_y,
             initial_pose_yaw
@@ -292,6 +313,7 @@ if __name__ == "__main__":
 
     print(f"[INFO] starting services: ROS={start_ros}, Terminal={start_terminal}")
     main(start_ros=start_ros, start_terminal=start_terminal)
+
     # # write down pid and ensure cleanup
     # with open("cb_pid_main_service.txt", "w") as f:
     #     f.write(str(os.getpid()) + "\n")

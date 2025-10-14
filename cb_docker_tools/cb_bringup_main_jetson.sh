@@ -36,6 +36,8 @@ fi
 source /opt/ros/humble/setup.bash
 source /home/ws/ugv_ws/install/setup.bash
 
+# FIXME: harcoded?
+DOMAIN_BRIDGE_CONFIG_FILE_FULLPATH="/home/ws/cb/cb_domain_bridge_config.yaml"
 
 #ros2 launch ugv_slam rtabmap_rgbd.launch.py use_rviz:=false
 #ros2 launch ugv_nav slam_nav.launch.py use_rviz:=false use_namespace:=true namespace:=beast001
@@ -47,9 +49,18 @@ source /home/ws/ugv_ws/install/setup.bash
 #     initial_pose_y = LaunchConfiguration('initial_pose_y')
 #     initial_pose_yaw = LaunchConfiguration('initial_pose_yaw')
 
-echo "[INFO] launching ugv_nav CB_main_launch.py with namespace=${ROBOT_UID}, initial_pose.x=${INITIAL_POSE_X}, initial_pose.y=${INITIAL_POSE_Y}, initial_pose.yaw=${INITIAL_POSE_YAW}"
+echo "[INFO] launching ugv_nav CB_main_launch.py with namespace=${ROBOT_UID}, domain_bridge_config_file_fullpath=${DOMAIN_BRIDGE_CONFIG_FILE_FULLPATH}, initial_pose.x=${INITIAL_POSE_X}, initial_pose.y=${INITIAL_POSE_Y}, initial_pose.yaw=${INITIAL_POSE_YAW}"
 
-ros2 launch ugv_nav CB_main_launch.py namespace:=${ROBOT_UID} \
- initial_pose.x:=${INITIAL_POSE_X} \
- initial_pose.y:=${INITIAL_POSE_Y} \
- initial_pose.yaw:=${INITIAL_POSE_YAW}
+# ros2 launch ugv_nav CB_main_launch.py \
+#   namespace:=${ROBOT_UID} \
+#   domain_bridge_config_file_fullpath:=${DOMAIN_BRIDGE_CONFIG_FILE_FULLPATH} \
+#   initial_pose.x:=${INITIAL_POSE_X} \
+#   initial_pose.y:=${INITIAL_POSE_Y} \
+#   initial_pose.yaw:=${INITIAL_POSE_YAW}
+
+# not using namespace anymore
+ros2 launch ugv_nav CB_main_launch.py \
+  domain_bridge_config_file_fullpath:=${DOMAIN_BRIDGE_CONFIG_FILE_FULLPATH} \
+  initial_pose.x:=${INITIAL_POSE_X} \
+  initial_pose.y:=${INITIAL_POSE_Y} \
+  initial_pose.yaw:=${INITIAL_POSE_YAW}
