@@ -91,8 +91,8 @@ def get_robot_config():
 
 def generate_domain_bridge_config(robot_uid, robot_domain_id):
     domain_bridge_config = {
-        "from_domain": robot_domain_id,
-        "to_domain": 0,
+        "from_domain": int(robot_domain_id),
+        "to_domain": int(0),
         "topics": {
             "tf": {
                 "type": "tf2_msgs/msg/TFMessage",
@@ -260,9 +260,9 @@ def main(_get_config_max_retry = 30, start_ros=True, start_terminal=True):  # 3 
             docker_script_path,
             robot_uid,
             str(robot_domain_id),
-            initial_pose_x,
-            initial_pose_y,
-            initial_pose_yaw
+            str(initial_pose_x),
+            str(initial_pose_y),
+            str(initial_pose_yaw)
         ]
 
         p1 = run_bash(f"cb_subsystem_ros2_nav.sh", docker_params, host_script_dir)
