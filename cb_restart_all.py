@@ -55,20 +55,20 @@ if __name__ == "__main__":
 
         docker_stop(container_name=container_name)
 
-        # find pid files and kill the terminal server
-        term_server_pid_file_path = "cb_pid_terminal.txt"
-        if os.path.exists(term_server_pid_file_path):
-            with open(term_server_pid_file_path, "r") as f:
-                pid = int(f.read().strip())
-                print(f"[INFO] Found terminal server PID: {pid}, sending SIGTERM")
-                try:
-                    os.kill(pid, signal.SIGTERM)
-                except ProcessLookupError:
-                    print(f"[WARN] No process with PID {pid} found.")
-                except Exception as e:
-                    print(f"[ERROR] Failed to kill process {pid}: {e}")
-        else:
-            print(f"[WARN] PID file {term_server_pid_file_path} not found. Is the terminal server running?")
+        # # find pid files and kill the terminal server
+        # term_server_pid_file_path = "cb_pid_terminal.txt"
+        # if os.path.exists(term_server_pid_file_path):
+        #     with open(term_server_pid_file_path, "r") as f:
+        #         pid = int(f.read().strip())
+        #         print(f"[INFO] Found terminal server PID: {pid}, sending SIGTERM")
+        #         try:
+        #             os.kill(pid, signal.SIGTERM)
+        #         except ProcessLookupError:
+        #             print(f"[WARN] No process with PID {pid} found.")
+        #         except Exception as e:
+        #             print(f"[ERROR] Failed to kill process {pid}: {e}")
+        # else:
+        #     print(f"[WARN] PID file {term_server_pid_file_path} not found. Is the terminal server running?")
 
 
         time.sleep(5)
