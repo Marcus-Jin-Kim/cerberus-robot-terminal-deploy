@@ -53,7 +53,7 @@ class CBTurretControl: # this should be top level robot controller later
         self.turret_cam_device_index = self.config["TURRET_CAM_DEVICE_INDEX"]
         self.turret_cam_width = self.config["TURRET_CAM_WIDTH"]
         self.turret_cam_height = self.config["TURRET_CAM_HEIGHT"]
-        self.turret_cam_fps_cap = self.config["TURRET_CAM_FPS_CAP"]
+        # self.turret_cam_fps_cap = self.config["TURRET_CAM_FPS_CAP"]
         self.turret_cam_jpeg_quality = self.config["TURRET_CAM_JPEG_QUALITY"]
         self.turret_cam_fov = self.config["TURRET_CAM_FOV"]
         self.return_image = self.config["TURRET_CAM_RETURN_IMAGE"]
