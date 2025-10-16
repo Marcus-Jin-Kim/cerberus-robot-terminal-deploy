@@ -29,7 +29,7 @@ class CerberusRobotTerminalServer:
         self.http_port = self.config.get("ROBOT_TERMINAL_SERVER_HTTP_PORT") # , 5100)
         
         # self.control_hz = self.config.get("ROBOT_TERMINAL_SERVER_ROBOT_CONTROL_HZ") # , 60)
-        self.scan_enemy_hz = self.config.get("") # , 10)
+        self.scan_enemy_hz = self.config.get("ROBOT_TERMINAL_SERVER_SCAN_ENEMY_HZ") # , 10)
         self.stream_fps = self.config.get("ROBOT_TERMINAL_SERVER_STREAM_FPS") # , 15)
 
         print(f"[SERV] Robot scan enemy HZ = {self.scan_enemy_hz}")
