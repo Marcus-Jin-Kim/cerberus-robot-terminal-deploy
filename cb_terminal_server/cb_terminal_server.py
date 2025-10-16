@@ -27,7 +27,9 @@ class CerberusRobotTerminalServer:
         self.host = self.config.get("ROBOT_TERMINAL_SERVER_HOST") #, "0.0.0.0")
         self.udp_port = self.config.get("ROBOT_TERMINAL_SERVER_UDP_PORT") #, 5001)
         self.http_port = self.config.get("ROBOT_TERMINAL_SERVER_HTTP_PORT") # , 5100)
-        self.control_hz = self.config.get("ROBOT_TERMINAL_SERVER_ROBOT_CONTROL_HZ") # , 60)
+        
+        # self.control_hz = self.config.get("ROBOT_TERMINAL_SERVER_ROBOT_CONTROL_HZ") # , 60)
+        self.scan_enemy_hz = self.config.get("") # , 10)
         self.stream_fps = self.config.get("ROBOT_TERMINAL_SERVER_STREAM_FPS") # , 15)
 
         print(f"[SERV] Robot control HZ = {self.control_hz}")
@@ -71,7 +73,7 @@ class CerberusRobotTerminalServer:
         # Capture/process loop: updates shared JSON and JPEG once per cycle
         while True:
             t0 = time.time()
-            wait_for_second = 1.0 / max(1, self.control_hz)
+            wait_for_second = 1.0 / max(1, self.scan_enemy_hz)
             try:
                 res = self.robot_control.scan_enemy()
             except Exception as e:
