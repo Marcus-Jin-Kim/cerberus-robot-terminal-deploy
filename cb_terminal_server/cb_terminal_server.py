@@ -5,6 +5,7 @@ import yaml
 from cb_robot_control import CBRobotControl
 import socket, time, json, threading
 from typing import Optional
+import urllib
 from urllib.parse import parse_qs
 
 # Flask for MJPEG stream
@@ -52,6 +53,8 @@ class CerberusRobotTerminalServer:
         self.last_ts: float = 0.0
 
 
+        
+
         # self._setup_routes()
 
         print(f"[SERV] UDP on {self.host}:{self.udp_port}, HTTP MJPEG on {self.host}:{self.http_port}")
@@ -71,6 +74,7 @@ class CerberusRobotTerminalServer:
 
     def _robot_control_loop(self):
         # Capture/process loop: updates shared JSON and JPEG once per cycle
+        # FIXME: better cycle management needed. robot can scan_enemy or can do other things
         while True:
             t0 = time.time()
             wait_for_second = 1.0 / max(1, self.scan_enemy_hz)
@@ -107,6 +111,9 @@ class CerberusRobotTerminalServer:
             self.last_jpeg = jpeg           # may be None if not returning image
             self.last_json = clean
             self.last_ts = time.time()
+
+            # report my robot status to skynet server            
+            self.robot_control.report_my_robot_status_to_skynet()
 
             dt = time.time() - t0
             if dt < wait_for_second:
@@ -159,7 +166,19 @@ class CerberusRobotTerminalServer:
             return {}
         pass
 
-
+    def report_my_robot_status_to_skynet(self):
+        url_root = self.config.get("SKYNET_SERVER_URL_ROOT")
+        machine_id = self.config.get("ROBOT_MACHINE_ID")
+        try:
+            resp = urllib.request.urlopen(f"{url_root}/report-my-robot-status-mid/{machine_id}", timeout=1.0)
+            if resp.status_code == 200:
+                # print(f"[SERV] report_my_robot_status_to_skynet OK")
+                pass
+            else:
+                print(f"[SERV] report_my_robot_status_to_skynet error: {resp.status_code}")
+        except Exception as e:
+            print(f"[SERV] report_my_robot_status_to_skynet exception: {e}")
+    
 
 app = Flask(__name__)
 socketio = SocketIO(app)

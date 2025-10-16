@@ -23,7 +23,7 @@ _SKYNET_SERVER_HOSTNAMES_ = ["192.168.137.1", "192.168.0.20", "192.168.77.7"]
 # TEMP until gets a server
 ___DEV_TEST_ROBOT_UID_ = "beast001"
 
-def get_robot_config():
+def init_my_robot_config():
 
     machine_id = ""
     robot_os = ""
@@ -59,7 +59,7 @@ def get_robot_config():
                     "robot-chassis": robot_chassis or ""
                 })
                 mid_q = urllib.parse.quote(machine_id, safe="")
-                url = f"http://{hostname}:8000/get-robot-config-mid/{mid_q}?{query}"
+                url = f"http://{hostname}:8000/init-my-robot-config-mid/{mid_q}?{query}"
                 print(f"[QUERY] {url}")
                 with urllib.request.urlopen(url, timeout=5) as response:
                     if response.status == 200:
@@ -67,6 +67,9 @@ def get_robot_config():
                         resp = json.loads(resp_json)
                         if resp.get("OK") and "robot_config" in resp:
                             robot_config = resp["robot_config"]
+                            robot_config["SKYNET_SERVER_HOST"] = hostname
+                            robot_config["SKYNET_SERVER_URL_ROOT"] = f"http://{hostname}:8000"
+
                             break
             
             except Exception as e:
@@ -158,7 +161,7 @@ def main(_get_config_max_retry = 30, start_ros=True, start_terminal=True):  # 3 
     robot_config = None
     get_config_try = 0
     while robot_config is None and get_config_try < _get_config_max_retry:
-        robot_config = get_robot_config()
+        robot_config = init_my_robot_config()
     
     
     if robot_config is None:
