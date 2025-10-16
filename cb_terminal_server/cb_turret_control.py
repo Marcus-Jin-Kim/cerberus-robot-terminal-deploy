@@ -58,7 +58,7 @@ class CBTurretControl: # this should be top level robot controller later
         self.turret_cam_fov = self.config["TURRET_CAM_FOV"]
         self.return_image = self.config["TURRET_CAM_RETURN_IMAGE"]
 
-        print(f"[CB]Turret camera: {self.turret_cam_fps_cap}FPS, JPEG quality={self.turret_cam_jpeg_quality}, return_image={self.return_image}")
+        print(f"[CB]Turret camera: JPEG quality={self.turret_cam_jpeg_quality}, return_image={self.return_image}")
 
         # Init camera
         self.cv2 = cv2.VideoCapture(self.turret_cam_device_index)
