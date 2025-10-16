@@ -1,2 +1,4 @@
 cb_config.yaml
 cb_pid_terminal.txt
+cb-env/
+cb_env/*
