@@ -113,7 +113,7 @@ class CerberusRobotTerminalServer:
             self.last_ts = time.time()
 
             # report my robot status to skynet server            
-            self.robot_control.report_my_robot_status_to_skynet()
+            self.report_my_robot_status_to_skynet()
 
             dt = time.time() - t0
             if dt < wait_for_second:
