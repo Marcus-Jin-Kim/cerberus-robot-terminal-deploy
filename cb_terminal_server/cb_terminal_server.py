@@ -32,7 +32,7 @@ class CerberusRobotTerminalServer:
         self.scan_enemy_hz = self.config.get("") # , 10)
         self.stream_fps = self.config.get("ROBOT_TERMINAL_SERVER_STREAM_FPS") # , 15)
 
-        print(f"[SERV] Robot control HZ = {self.control_hz}")
+        print(f"[SERV] Robot scan enemy HZ = {self.scan_enemy_hz}")
 
         # UDP socket
         self.udp_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
