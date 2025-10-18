@@ -93,6 +93,7 @@ if __name__ == "__main__":
         exit(0)
 
     time.sleep(5)
+    os.system("ps -ef | grep python")
     # os.system("bash -lc 'python3 cb_main_service.py & disown'")
 
     if arg in ["restart-all", "restart-terminal", "restart-ros"]:

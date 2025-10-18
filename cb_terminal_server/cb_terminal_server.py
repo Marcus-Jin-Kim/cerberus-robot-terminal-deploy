@@ -42,6 +42,9 @@ class CerberusRobotTerminalServer:
             self.udp_server.bind((self.host, self.udp_port))
             print(f"[RTerm] UDP server on {self.host}:{self.udp_port}")
 
+        else:            
+            print(f"[RTerm] UDP server disabled.")
+
         # Shared backend (single instance)
         # self.low_level_control = CBLowLevelControl(self.config)
         self.robot_control = CBRobotControl(
