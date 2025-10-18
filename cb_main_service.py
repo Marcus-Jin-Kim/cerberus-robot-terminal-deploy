@@ -25,7 +25,7 @@ ___DEV_TEST_ROBOT_UID_ = "beast001"
 
 def init_my_robot_config():
 
-    machine_id = ""
+    robot_uuid = ""
     robot_os = ""
 
     robot_chassis = ""
@@ -47,8 +47,8 @@ def init_my_robot_config():
             ugv_config = yaml.safe_load(open("/home/ws/ugv_rpi/config.yaml", 'r'))
             robot_chassis = ugv_config.get("base_config").get("robot_name")
 
-        with open("/etc/machine-id", "r") as f:
-            machine_id = f.read().strip()
+        with open("ROBOT_UUID", "r") as f:
+            robot_uuid = f.read().strip()
 
         robot_config = None
         for hostname in _SKYNET_SERVER_HOSTNAMES_:
@@ -58,7 +58,7 @@ def init_my_robot_config():
                     "robot-os": robot_os or "",
                     "robot-chassis": robot_chassis or ""
                 })
-                mid_q = urllib.parse.quote(machine_id, safe="")
+                mid_q = urllib.parse.quote(robot_uuid, safe="")
                 url = f"http://{hostname}:8000/init-my-robot-config-mid/{mid_q}?{query}"
                 print(f"[QUERY] {url}")
                 with urllib.request.urlopen(url, timeout=5) as response:
@@ -80,7 +80,7 @@ def init_my_robot_config():
             raise Exception(f"Cannot find robot config from any master server {_SKYNET_SERVER_HOSTNAMES_}")
             return None
 
-        print(f"[INFO] got robot_config for machine_id: {machine_id}")
+        print(f"[INFO] got robot_config for robot_uuid: {robot_uuid}")
         # write down to local file
 
         return robot_config
