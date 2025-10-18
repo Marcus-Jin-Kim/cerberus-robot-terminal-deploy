@@ -30,16 +30,17 @@ class CerberusRobotTerminalServer:
         self.http_port = self.config.get("ROBOT_TERMINAL_SERVER_HTTP_PORT") # , 5100)
         
         # self.control_hz = self.config.get("ROBOT_TERMINAL_SERVER_ROBOT_CONTROL_HZ") # , 60)
+        self.udp_server_enabled = self.config.get("ROBOT_UDP_SERVER_ENABLED", False)
         self.scan_enemy_enabled = self.config.get("ROBOT_SCAN_ENEMY_ENABLED", False)    
         self.scan_enemy_hz = self.config.get("ROBOT_TERMINAL_SERVER_SCAN_ENEMY_HZ") # , 10)
         self.stream_fps = self.config.get("ROBOT_TERMINAL_SERVER_STREAM_FPS") # , 15)
         self.status_report_interval = self.config.get("ROBOT_STATUS_REPORT_TO_SKYNET_INTERVAL", 10)
 
-        print(f"[SERV] Robot scan enemy HZ = {self.scan_enemy_hz}")
-
-        # UDP socket
-        self.udp_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.udp_server.bind((self.host, self.udp_port))
+        if self.udp_server_enabled is True:
+            # UDP socket
+            self.udp_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.udp_server.bind((self.host, self.udp_port))
+            print(f"[RTerm] UDP server on {self.host}:{self.udp_port}")
 
         # Shared backend (single instance)
         # self.low_level_control = CBLowLevelControl(self.config)
@@ -53,14 +54,11 @@ class CerberusRobotTerminalServer:
         self.last_json: Optional[dict] = None     # JSON-safe pose data (no bytes)
         self.last_jpeg: Optional[bytes] = None    # latest JPEG bytes
         self.last_ts: float = 0.0
-        self.last_report_since: float = 0.0
-
-
-        
+        self.last_report_since: float = 0.0        
 
         # self._setup_routes()
-
-        print(f"[SERV] UDP on {self.host}:{self.udp_port}, HTTP MJPEG on {self.host}:{self.http_port}")
+        print(f"[RTerm] scan_enemy_enabled = {self.scan_enemy_enabled}, scan enemy HZ = {self.scan_enemy_hz}")
+        print(f"[RTerm] HTTP Server: {self.host}:{self.http_port}")
 
 
     def mjpeg_gen(self):
@@ -255,7 +253,8 @@ if __name__ == "__main__":
     try:
         # Threads: robot_control + UDP; Flask runs in main thread
         threading.Thread(target=server._robot_control_loop, daemon=True).start()
-        threading.Thread(target=server._udp_loop, daemon=True).start()
+        if server.udp_server_enabled is True:
+            threading.Thread(target=server._udp_loop, daemon=True).start()
 
         # app.run(host=server.host, port=server.http_port, threaded=True, use_reloader=False, debug=False)
         server.robot_control.low_level_control.base_control_low.lights_ctrl(0, 0)
