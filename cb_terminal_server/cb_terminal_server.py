@@ -184,11 +184,11 @@ class CerberusRobotTerminalServer:
         machine_id = self.config.get("ROBOT_UUID")
         try:
             resp = urllib.request.urlopen(f"{url_root}/report-my-robot-status-mid/{machine_id}", timeout=1.0)
-            if resp.status_code == 200:
+            if resp.status == 200:
                 # print(f"[SERV] report_my_robot_status_to_skynet OK")
                 pass
             else:
-                print(f"[SERV] report_my_robot_status_to_skynet error: {resp.status_code}")
+                print(f"[SERV] report_my_robot_status_to_skynet error: {resp.status}")
         except Exception as e:
             print(f"[SERV] report_my_robot_status_to_skynet exception: {e}")
     
