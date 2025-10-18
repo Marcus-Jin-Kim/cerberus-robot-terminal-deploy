@@ -32,6 +32,7 @@ class CerberusRobotTerminalServer:
         # self.control_hz = self.config.get("ROBOT_TERMINAL_SERVER_ROBOT_CONTROL_HZ") # , 60)
         self.scan_enemy_hz = self.config.get("ROBOT_TERMINAL_SERVER_SCAN_ENEMY_HZ") # , 10)
         self.stream_fps = self.config.get("ROBOT_TERMINAL_SERVER_STREAM_FPS") # , 15)
+        self.status_report_interval = self.config.get("ROBOT_STATUS_REPORT_TO_SKYNET_INTERVAL", 10)
 
         print(f"[SERV] Robot scan enemy HZ = {self.scan_enemy_hz}")
 
@@ -51,6 +52,7 @@ class CerberusRobotTerminalServer:
         self.last_json: Optional[dict] = None     # JSON-safe pose data (no bytes)
         self.last_jpeg: Optional[bytes] = None    # latest JPEG bytes
         self.last_ts: float = 0.0
+        self.last_report_since: float = 0.0
 
 
         
@@ -112,9 +114,12 @@ class CerberusRobotTerminalServer:
             self.last_json = clean
             self.last_ts = time.time()
 
-            # report my robot status to skynet server            
-            self.report_my_robot_status_to_skynet()
-
+            # report my robot status to skynet server     
+            if self.last_report_since + self.status_report_interval < time.time():
+                self.report_my_robot_status_to_skynet()
+                self.last_report_since = time.time()
+                # print(f"[SERV] report_my_robot_status_to_skynet")       
+                
             dt = time.time() - t0
             if dt < wait_for_second:
                 time.sleep(wait_for_second - dt)
