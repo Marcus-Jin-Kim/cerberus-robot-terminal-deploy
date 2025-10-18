@@ -181,7 +181,7 @@ class CerberusRobotTerminalServer:
 
     def report_my_robot_status_to_skynet(self):
         url_root = self.config.get("SKYNET_SERVER_URL_ROOT")
-        machine_id = self.config.get("ROBOT_MACHINE_ID")
+        machine_id = self.config.get("ROBOT_UUID")
         try:
             resp = urllib.request.urlopen(f"{url_root}/report-my-robot-status-mid/{machine_id}", timeout=1.0)
             if resp.status_code == 200:
