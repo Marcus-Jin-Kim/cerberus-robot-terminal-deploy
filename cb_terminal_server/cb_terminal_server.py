@@ -30,6 +30,7 @@ class CerberusRobotTerminalServer:
         self.http_port = self.config.get("ROBOT_TERMINAL_SERVER_HTTP_PORT") # , 5100)
         
         # self.control_hz = self.config.get("ROBOT_TERMINAL_SERVER_ROBOT_CONTROL_HZ") # , 60)
+        self.scan_enemy_enabled = self.config.get("ROBOT_SCAN_ENEMY_ENABLED", False)    
         self.scan_enemy_hz = self.config.get("ROBOT_TERMINAL_SERVER_SCAN_ENEMY_HZ") # , 10)
         self.stream_fps = self.config.get("ROBOT_TERMINAL_SERVER_STREAM_FPS") # , 15)
         self.status_report_interval = self.config.get("ROBOT_STATUS_REPORT_TO_SKYNET_INTERVAL", 10)
@@ -79,50 +80,56 @@ class CerberusRobotTerminalServer:
         # FIXME: better cycle management needed. robot can scan_enemy or can do other things
         while True:
             t0 = time.time()
-            wait_for_second = 1.0 / max(1, self.scan_enemy_hz)
-            try:
-                res = self.robot_control.scan_enemy()
-            except Exception as e:
-                tb = traceback.extract_tb(e.__traceback__)[-1]
-                print(f"[AI ] detect_pose error at {tb.filename}:{tb.lineno} in {tb.name}: {e}")
-                time.sleep(0.05)
-                continue
-
-           # Build outputs OUTSIDE the lock
-            jpeg: bytes = None
-            if isinstance(res, dict) and res.get("return_image", False):
-                v = (res.get("data") or {}).get("jpg_image_bytes")
-                jpeg = v
-                # if isinstance(v, bytes):
-                #     jpeg = v                    # zero-copy
-                # elif isinstance(v, (bytearray, memoryview)):
-                #     jpeg = bytes(v)             # one copy to immutable
-
-            # copy res to self.last_json except ["data"]["jpg_image_bytes"]
-            clean = {"OK": False, "error": "bad_result"}
-            if isinstance(res, dict):
-                clean = res.copy()              # shallow copy
-                d = clean.get("data")
-                if isinstance(d, dict):
-                    d = d.copy()
-                    d.pop("jpg_image_bytes", None)
-                    clean["data"] = d
-
-            # Minimal critical section
-            #with self._lock: # disable lock for now
-            self.last_jpeg = jpeg           # may be None if not returning image
-            self.last_json = clean
-            self.last_ts = time.time()
-
-            # report my robot status to skynet server     
+            
+            # report my robot status to skynet server first
             if self.last_report_since + self.status_report_interval < time.time():
                 self.report_my_robot_status_to_skynet()
                 self.last_report_since = time.time()
-                # print(f"[SERV] report_my_robot_status_to_skynet")       
-                
-            dt = time.time() - t0
-            if dt < wait_for_second:
-                time.sleep(wait_for_second - dt)
+                # print(f"[SERV] report_my_robot_status_to_skynet")    
+
+            # scan enemy part (make a function later)
+            if self.scan_enemy_enabled:                
+            
+                wait_for_second = 1.0 / max(1, self.scan_enemy_hz)
+                try:
+                    res = self.robot_control.scan_enemy()
+                except Exception as e:
+                    tb = traceback.extract_tb(e.__traceback__)[-1]
+                    print(f"[AI ] detect_pose error at {tb.filename}:{tb.lineno} in {tb.name}: {e}")
+                    time.sleep(0.05)
+                    continue
+
+            # Build outputs OUTSIDE the lock
+                jpeg: bytes = None
+                if isinstance(res, dict) and res.get("return_image", False):
+                    v = (res.get("data") or {}).get("jpg_image_bytes")
+                    jpeg = v
+                    # if isinstance(v, bytes):
+                    #     jpeg = v                    # zero-copy
+                    # elif isinstance(v, (bytearray, memoryview)):
+                    #     jpeg = bytes(v)             # one copy to immutable
+
+                # copy res to self.last_json except ["data"]["jpg_image_bytes"]
+                clean = {"OK": False, "error": "bad_result"}
+                if isinstance(res, dict):
+                    clean = res.copy()              # shallow copy
+                    d = clean.get("data")
+                    if isinstance(d, dict):
+                        d = d.copy()
+                        d.pop("jpg_image_bytes", None)
+                        clean["data"] = d
+
+                # Minimal critical section
+                #with self._lock: # disable lock for now
+                self.last_jpeg = jpeg           # may be None if not returning image
+                self.last_json = clean
+                self.last_ts = time.time()
+
+    
+                    
+                dt = time.time() - t0
+                if dt < wait_for_second:
+                    time.sleep(wait_for_second - dt)
 
     def _udp_loop(self):
         # Serve small JSON (no images) over UDP
