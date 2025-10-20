@@ -1,4 +1,8 @@
 #!/bin/bash
+
+## TODO: install domain bridge!!
+
+
 bash ../../ugv_ws/ros2_humble.sh
 # get docker container name
 CONTAINER_NAME=$(docker ps --filter "name=ros_humble" --format "{{.Names}}")
