@@ -38,7 +38,7 @@ def create_routes_blueprint_cmd(robot_control_server:"CerberusRobotTerminalServe
     def move_vsws():
         vspeed = request.args.get('vspeed', default=0, type=float)
         aspeed = request.args.get('aspeed', default=0, type=float)
-        duration = request.args.get('duration', default=-1, type=float) # -1 means default duration, 0 means continuous        
+        duration = request.args.get('duration', default=-1, type=float) # <=0 means continuous (= max heartbeat 3.0 sec)
         _bc.direct_speed_control(vspeed=vspeed, aspeed=aspeed, duration=duration)
         return jsonify({"OK": True}),200
     
@@ -48,7 +48,7 @@ def create_routes_blueprint_cmd(robot_control_server:"CerberusRobotTerminalServe
         """ move with vertical and angular LEVEL """
         vl = request.args.get('vl', default=0, type=int)
         wl = request.args.get('wl', default=0, type=int)
-        duration = request.args.get('duration', default=-1, type=float) # -1 means default duration, 0 means continuous
+        duration = request.args.get('duration', default=-1, type=float) # <=0 means continuous (= max heartbeat 3.0 sec)
         vwd = _config_vlwl_to_dict()
 
         vlm = 0 if (vl==0) else abs(vl)
