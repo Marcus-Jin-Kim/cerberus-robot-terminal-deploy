@@ -90,8 +90,6 @@ class CerberusRobotTerminalServer:
 
             # scan enemy part (make a function later)
             if self.scan_enemy_enabled:                
-            
-                wait_for_second = 1.0 / max(1, self.scan_enemy_hz)
                 try:
                     res = self.robot_control.scan_enemy()
                 except Exception as e:
@@ -100,7 +98,7 @@ class CerberusRobotTerminalServer:
                     time.sleep(0.05)
                     continue
 
-            # Build outputs OUTSIDE the lock
+                # Build outputs OUTSIDE the lock
                 jpeg: bytes = None
                 if isinstance(res, dict) and res.get("return_image", False):
                     v = (res.get("data") or {}).get("jpg_image_bytes")
@@ -124,13 +122,14 @@ class CerberusRobotTerminalServer:
                 #with self._lock: # disable lock for now
                 self.last_jpeg = jpeg           # may be None if not returning image
                 self.last_json = clean
-                self.last_ts = time.time()
-
-    
-                    
-                dt = time.time() - t0
-                if dt < wait_for_second:
-                    time.sleep(wait_for_second - dt)
+                self.last_ts = time.time()    
+            
+            # TODO: scan enemy or not, wait for second of scan enemy. need better time management here
+            wait_for_second = 1.0 / max(1, self.scan_enemy_hz)
+            dt = time.time() - t0
+            if dt < wait_for_second:
+                time.sleep(wait_for_second - dt)
+                
 
     def _udp_loop(self):
         # Serve small JSON (no images) over UDP
